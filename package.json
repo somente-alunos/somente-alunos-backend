@@ -1,0 +1,26 @@
+{
+  "name": "somente-alunos-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy --env=production",
+    "dev": "wrangler dev --env=local --port=8787 --persist-to=%USERPROFILE%/database-local/.wrangler/state",
+    "start": "wrangler dev --env=local",
+    "test": "vitest",
+    "type": "wrangler types",
+
+		"tunnel": "%CD%/tunnel_local/cloudflared.exe tunnel --origincert=%USERPROFILE%\\.cloudflared\\credencial_somentealunos.vip\\cert.pem --url http://127.0.0.1:8787 run localapi2_somentealunos_v1",
+		"log-production": "npx wrangler tail somente-alunos-backend-production",
+		"log-dev": "npx wrangler tail somente-alunos-backend-dev"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.12.4",
+    "@types/node": "^25.6.0",
+    "typescript": "^5.5.2",
+    "vitest": "~3.2.0",
+    "wrangler": "^4.83.0"
+  },
+  "dependencies": {
+    "@tsndr/cloudflare-worker-jwt": "^3.2.1"
+  }
+}

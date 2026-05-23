@@ -1,0 +1,282 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"main": "src/index.ts",
+	"keep_vars": true,
+	"compatibility_date": "2026-04-16",
+	"observability": {
+		"enabled": true,
+	},
+	"upload_source_maps": true,
+	"compatibility_flags": ["nodejs_compat"],
+
+	// The "env" property is commented out in this example file. To use it, simply uncomment and fill in the values as needed.
+	/* "env": {
+		// # # # # # # # # # # # # # # # # # # # #
+		// Env Production
+		"production": {
+			// Name Production
+			"name": "somente-alunos-backend",
+
+			// Routes Production
+			"routes": [
+				{
+					"pattern": "PREFIX.somentealunos.vip",
+					"custom_domain": true,
+				},
+			],
+
+			// D1 Production
+			"d1_databases": [
+				{
+					"binding": "D1_somenteAlunosAll2",
+					"database_name": "d1_somente_alunos_all_2-production",
+					"database_id": "00000000-0000-0000-0000-000000000000",
+					"preview_database_id": "11111111-1111-1111-1111-111111111111",
+				},
+			],
+
+			// R2 Production
+			"r2_buckets": [
+				{
+					"binding": "R2_somenteAlunosAll2",
+					"bucket_name": "somente-alunos-all-2-production",
+					"preview_bucket_name": "somente-alunos-all-2-dev",
+				},
+			],
+
+			// Mtls Certificates Production
+			"mtls_certificates": [
+				{
+					"binding": "MtlsCertificates_efiBankGP",
+					"certificate_id": "22222222-2222-2222-2222-222222222222",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRP",
+					"certificate_id": "33333333-3333-3333-3333-333333333333",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRC",
+					"certificate_id": "44444444-4444-4444-4444-444444444444",
+					"remote": true,
+				},
+			],
+
+			// Var Production
+			"vars": {
+				"Env_originFrontend": "https://somentealunos.vip",
+				"Env_hostnameFrontend": "somentealunos.vip",
+				"Env_cookiePrefix": "production",
+				"Env_environment": "production",
+
+				"EnvSecret_verifyStudentCpfOrRa": false,
+
+				"EnvSecret_verifyStudentEndpoint1": "https://example-external-api-to-verify-student-document.com/verify_1",
+				"EnvSecret_verifyStudentEndpoint2": "https://example-external-api-to-verify-student-document.com/verify_2",
+				"EnvSecret_verifyStudentEndpoint3": "https://example-external-api-to-verify-student-document.com/verify_3",
+
+				"EnvSecret_verifyStudentToken1": "example_secretToken",
+				"EnvSecret_verifyStudentToken2": "example_secretToken",
+				"EnvSecret_verifyStudentToken3": "example_secretToken",
+
+				"EnvSecret_keyPrivateJwtStudent": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"EnvSecret_keyPrivateJwtAdmin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+
+				"EnvSecret_keyPixGP": "77777777-7777-7777-7777-777777777777",
+				"EnvSecret_keyPixRP": "88888888-8888-8888-8888-888888888888",
+				"EnvSecret_keyPixRC": "99999999-9999-9999-9999-999999999999",
+				"EnvSecret_keyClientIdEfiBankGP": "Client_Id_cccccccccccccccccccccccccccccccccccccccc",
+				"EnvSecret_keyClientIdEfiBankRP": "Client_Id_dddddddddddddddddddddddddddddddddddddddd",
+				"EnvSecret_keyClientIdEfiBankRC": "Client_Id_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+				"EnvSecret_keyClientSecretEfiBankGP": "Client_Secret_ffffffffffffffffffffffffffffffffffffffff",
+				"EnvSecret_keyClientSecretEfiBankRP": "Client_Secret_gggggggggggggggggggggggggggggggggggggggg",
+				"EnvSecret_keyClientSecretEfiBankRC": "Client_Secret_hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+				"EnvSecret_tokenWebhookEfiBank": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+
+				"EnvSecret_geminiApiKey": "jjjjjjjj_jjjjjjjjj_jjjjjjjjjjjjj_jj-jjj",
+				"EnvSecret_tokenBetweenServer": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+			},
+		},
+
+		// # # # # # # # # # # # # # # # # # # # #
+		// Env Dev
+		"dev": {
+			// Name Dev
+			"name": "somente-alunos-backend-dev",
+
+			// Routes Dev
+			"routes": [
+				{
+					"pattern": "PREFIX.somentealunos.vip",
+					"custom_domain": true,
+				},
+			],
+
+			// D1 Dev
+			"d1_databases": [
+				{
+					"binding": "D1_somenteAlunosAll2",
+					"database_name": "d1_somente_alunos_all_2-dev",
+					"database_id": "00000000-0000-0000-0000-000000000000",
+					"preview_database_id": "11111111-1111-1111-1111-111111111111",
+				},
+			],
+
+			// R2 Dev
+			"r2_buckets": [
+				{
+					"binding": "R2_somenteAlunosAll2",
+					"bucket_name": "somente-alunos-all-2-dev",
+					"preview_bucket_name": "somente-alunos-all-2-dev",
+				},
+			],
+
+			// Mtls Certificates Dev
+			"mtls_certificates": [
+				{
+					"binding": "MtlsCertificates_efiBankGP",
+					"certificate_id": "22222222-2222-2222-2222-222222222222",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRP",
+					"certificate_id": "33333333-3333-3333-3333-333333333333",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRC",
+					"certificate_id": "44444444-4444-4444-4444-444444444444",
+					"remote": true,
+				},
+			],
+
+			// Var Dev
+			"vars": {
+				"Env_originFrontend": "https://somentealunos.vip",
+				"Env_hostnameFrontend": "somentealunos.vip",
+				"Env_cookiePrefix": "dev",
+				"Env_environment": "dev",
+
+				"EnvSecret_verifyStudentCpfOrRa": false,
+
+				"EnvSecret_verifyStudentEndpoint1": "https://example-external-api-to-verify-student-document.com/verify_1",
+				"EnvSecret_verifyStudentEndpoint2": "https://example-external-api-to-verify-student-document.com/verify_2",
+				"EnvSecret_verifyStudentEndpoint3": "https://example-external-api-to-verify-student-document.com/verify_3",
+
+				"EnvSecret_verifyStudentToken1": "example_secretToken",
+				"EnvSecret_verifyStudentToken2": "example_secretToken",
+				"EnvSecret_verifyStudentToken3": "example_secretToken",
+
+				"EnvSecret_keyPrivateJwtStudent": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"EnvSecret_keyPrivateJwtAdmin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+
+				"EnvSecret_keyPixGP": "77777777-7777-7777-7777-777777777777",
+				"EnvSecret_keyPixRP": "88888888-8888-8888-8888-888888888888",
+				"EnvSecret_keyPixRC": "99999999-9999-9999-9999-999999999999",
+				"EnvSecret_keyClientIdEfiBankGP": "Client_Id_cccccccccccccccccccccccccccccccccccccccc",
+				"EnvSecret_keyClientIdEfiBankRP": "Client_Id_dddddddddddddddddddddddddddddddddddddddd",
+				"EnvSecret_keyClientIdEfiBankRC": "Client_Id_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+				"EnvSecret_keyClientSecretEfiBankGP": "Client_Secret_ffffffffffffffffffffffffffffffffffffffff",
+				"EnvSecret_keyClientSecretEfiBankRP": "Client_Secret_gggggggggggggggggggggggggggggggggggggggg",
+				"EnvSecret_keyClientSecretEfiBankRC": "Client_Secret_hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+				"EnvSecret_tokenWebhookEfiBank": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+
+				"EnvSecret_geminiApiKey": "jjjjjjjj_jjjjjjjjj_jjjjjjjjjjjjj_jj-jjj",
+				"EnvSecret_tokenBetweenServer": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+			},
+		},
+
+		// # # # # # # # # # # # # # # # # # # # #
+		// Env Local
+		"local": {
+			// Name Local
+			"name": "somente-alunos-backend-local",
+
+			// Routes Local
+			"routes": [
+				{
+					"pattern": "PREFIX.somentealunos.vip",
+					"custom_domain": true,
+				},
+			],
+
+			// D1 Local
+			"d1_databases": [
+				{
+					"binding": "D1_somenteAlunosAll2",
+					"database_name": "d1_somente_alunos_all_2-local",
+					"database_id": "00000000-0000-0000-0000-000000000000",
+					"preview_database_id": "11111111-1111-1111-1111-111111111111",
+				},
+			],
+
+			// R2 Local
+			"r2_buckets": [
+				{
+					"binding": "R2_somenteAlunosAll2",
+					"bucket_name": "somente-alunos-all-2-local",
+					"preview_bucket_name": "somente-alunos-all-2-dev",
+				},
+			],
+
+			// Mtls Certificates Local
+			"mtls_certificates": [
+				{
+					"binding": "MtlsCertificates_efiBankGP",
+					"certificate_id": "22222222-2222-2222-2222-222222222222",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRP",
+					"certificate_id": "33333333-3333-3333-3333-333333333333",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRC",
+					"certificate_id": "44444444-4444-4444-4444-444444444444",
+					"remote": true,
+				},
+			],
+
+			// Var Local
+			"vars": {
+				"Env_originFrontend": "https://somentealunos.vip",
+				"Env_hostnameFrontend": "somentealunos.vip",
+				"Env_cookiePrefix": "local",
+				"Env_environment": "local",
+
+				"EnvSecret_verifyStudentCpfOrRa": false,
+
+				"EnvSecret_verifyStudentEndpoint1": "https://example-external-api-to-verify-student-document.com/verify_1",
+				"EnvSecret_verifyStudentEndpoint2": "https://example-external-api-to-verify-student-document.com/verify_2",
+				"EnvSecret_verifyStudentEndpoint3": "https://example-external-api-to-verify-student-document.com/verify_3",
+
+				"EnvSecret_verifyStudentToken1": "example_secretToken",
+				"EnvSecret_verifyStudentToken2": "example_secretToken",
+				"EnvSecret_verifyStudentToken3": "example_secretToken",
+
+				"EnvSecret_keyPrivateJwtStudent": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"EnvSecret_keyPrivateJwtAdmin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+
+				"EnvSecret_keyPixGP": "77777777-7777-7777-7777-777777777777",
+				"EnvSecret_keyPixRP": "88888888-8888-8888-8888-888888888888",
+				"EnvSecret_keyPixRC": "99999999-9999-9999-9999-999999999999",
+				"EnvSecret_keyClientIdEfiBankGP": "Client_Id_cccccccccccccccccccccccccccccccccccccccc",
+				"EnvSecret_keyClientIdEfiBankRP": "Client_Id_dddddddddddddddddddddddddddddddddddddddd",
+				"EnvSecret_keyClientIdEfiBankRC": "Client_Id_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+				"EnvSecret_keyClientSecretEfiBankGP": "Client_Secret_ffffffffffffffffffffffffffffffffffffffff",
+				"EnvSecret_keyClientSecretEfiBankRP": "Client_Secret_gggggggggggggggggggggggggggggggggggggggg",
+				"EnvSecret_keyClientSecretEfiBankRC": "Client_Secret_hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+				"EnvSecret_tokenWebhookEfiBank": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+
+				"EnvSecret_geminiApiKey": "jjjjjjjj_jjjjjjjjj_jjjjjjjjjjjjj_jj-jjj",
+				"EnvSecret_tokenBetweenServer": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+			},
+		},
+	}, */
+}
