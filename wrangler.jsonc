@@ -5,13 +5,13 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": "src/index.ts",
-	"keep_vars": true,
 	"compatibility_date": "2026-04-16",
 	"observability": {
 		"enabled": true,
 	},
 	"upload_source_maps": true,
 	"compatibility_flags": ["nodejs_compat"],
+	"keep_vars": true,
 
 	// The "env" property is commented out in this example file. To use it, simply uncomment and fill in the values as needed.
 	/* "env": {
