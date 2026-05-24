@@ -171,4 +171,4 @@ worker-configuration.d.ts
 
 /tunnel_local
 
-original_wrangler.jsonc
+env_secret.jsonc

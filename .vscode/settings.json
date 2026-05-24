@@ -1,5 +1,9 @@
 {
 	"files.associations": {
 		"wrangler.json": "jsonc"
+	},
+	"files.exclude": {
+		"**/._git": true,
+		"**/.git": false
 	}
 }

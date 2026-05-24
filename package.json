@@ -1,17 +1,19 @@
 {
   "name": "somente-alunos-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy --env=production",
     "dev": "wrangler dev --env=local --port=8787 --persist-to=%USERPROFILE%/database-local/.wrangler/state",
     "start": "wrangler dev --env=local",
     "test": "vitest",
-    "type": "wrangler types",
+    "type": "node generate_env_secret.js --file=env_secret.jsonc,EXAMPLE_env_secret.jsonc --env=production,dev,local && wrangler types",
 
 		"tunnel": "%CD%/tunnel_local/cloudflared.exe tunnel --origincert=%USERPROFILE%\\.cloudflared\\credencial_somentealunos.vip\\cert.pem --url http://127.0.0.1:8787 run localapi2_somentealunos_v1",
 		"log-production": "npx wrangler tail somente-alunos-backend-production",
-		"log-dev": "npx wrangler tail somente-alunos-backend-dev"
+		"log-dev": "npx wrangler tail somente-alunos-backend-dev",
+
+		"set-pre-push": "node -e \"require('fs').writeFileSync('.git/hooks/pre-push', '#!/bin/sh\\nBRANCH=$(git branch --show-current)\\n\\n# 1. Gera/atualiza todos os arquivos .env dinamicamente a partir do JSONC\\nnode generate-envs.js --file=env_secret.jsonc --env=production,dev,local\\n\\n# 2. Envia as secrets para o ambiente correspondente\\nif [ \\\"$BRANCH\\\" = \\\"main\\\" ]; then\\n  npx wrangler secret bulk .env.production --env=production\\nelif [ \\\"$BRANCH\\\" = \\\"dev\\\" ]; then\\n  npx wrangler secret bulk .env.dev --env=dev\\nfi\\n')\""
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.12.4",
