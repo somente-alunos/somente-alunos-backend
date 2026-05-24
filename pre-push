@@ -1,0 +1,31 @@
+#!/bin/sh
+# Aborta o push caso ocorra algum erro no processo
+set -e
+
+echo "-> Iniciando pre-push..." >&2
+echo "   Diretório atual: $(pwd)" >&2
+
+# 1. Detecta a branch de destino do push
+read local_ref local_sha remote_ref remote_sha
+if [ -z "$local_ref" ]; then
+  BRANCH=$(git branch --show-current)
+else
+  BRANCH=${local_ref#refs/heads/}
+fi
+echo "   Branch detectada: $BRANCH" >&2
+
+# 2. Executa o script que gera os arquivos .env
+node generate_env_secret.js --file=env_secret.jsonc --env=production,dev,local >&2
+
+# 3. Sincroniza as secrets com o Cloudflare Wrangler dependendo da branch
+if [ "$BRANCH" = "main" ]; then
+  echo "-> Iniciando sincronização de env secret para .env.production..." >&2
+  npx wrangler secret bulk .env.production --env=production >&2
+  echo "   Finalizando sincronização de .env.production." >&2
+elif [ "$BRANCH" = "dev" ]; then
+  echo "-> Iniciando sincronização de env secret para .env.dev..." >&2
+  npx wrangler secret bulk .env.dev --env=dev >&2
+  echo "   Finalizando sincronização de .env.dev." >&2
+fi
+
+echo "-> Terminou pre-push." >&2

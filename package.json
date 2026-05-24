@@ -13,7 +13,7 @@
 		"log-production": "npx wrangler tail somente-alunos-backend-production",
 		"log-dev": "npx wrangler tail somente-alunos-backend-dev",
 
-		"set-pre-push": "node -e \"require('fs').writeFileSync('.git/hooks/pre-push', '#!/bin/sh\\nBRANCH=$(git branch --show-current)\\n\\n# 1. Gera/atualiza todos os arquivos .env dinamicamente a partir do JSONC\\nnode generate-envs.js --file=env_secret.jsonc --env=production,dev,local\\n\\n# 2. Envia as secrets para o ambiente correspondente\\nif [ \\\"$BRANCH\\\" = \\\"main\\\" ]; then\\n  npx wrangler secret bulk .env.production --env=production\\nelif [ \\\"$BRANCH\\\" = \\\"dev\\\" ]; then\\n  npx wrangler secret bulk .env.dev --env=dev\\nfi\\n')\""
+		"set-pre-push": "node -e \"const fs = require('fs'); fs.copyFileSync('pre-push', '.git/hooks/pre-push'); try { fs.chmodSync('.git/hooks/pre-push', 0o755); } catch (e) {} console.log('Hook pre-push configurado com sucesso!');\""
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.12.4",
