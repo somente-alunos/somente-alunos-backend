@@ -156,7 +156,7 @@
 
 			// Var Dev
 			"vars": {
-				"Env_originFrontend": "https://dev2.somentealunos.vip",
+				"Env_originFrontend": "https://dev.somentealunos.vip",
 				"Env_hostnameFrontend": "somentealunos.vip",
 				"Env_cookiePrefix": "dev",
 				"Env_environment": "dev",
@@ -245,7 +245,7 @@
 
 			// Var Local
 			"vars": {
-				"Env_originFrontend": "https://local2.somentealunos.vip",
+				"Env_originFrontend": "https://local.somentealunos.vip",
 				"Env_hostnameFrontend": "somentealunos.vip",
 				"Env_cookiePrefix": "local",
 				"Env_environment": "local",

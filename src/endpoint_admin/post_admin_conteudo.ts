@@ -1,4 +1,4 @@
-import { Function_deleteContentFileFromR2, Function_getAdminAuthenticated, Function_getFuncionName, Function_getResponseError, Function_getTrimmedStringOrUndefined, Function_getValidatedStudentContentFile, Function_isError, Function_postContentFileToR2, Function_postD1 } from "../function_global"
+import { Function_deleteContentFileFromR2, Function_deleteD1, Function_getAdminAuthenticated, Function_getD1, Function_getFuncionName, Function_getResponseError, Function_getTrimmedStringOrUndefined, Function_getValidatedStudentContentFile, Function_isError, Function_postContentFileToR2, Function_postD1 } from "../function_global"
 
 
 type Type_PostAdminConteudoBody = {
@@ -97,7 +97,7 @@ export class Class_PostAdminConteudo {
 	public static async main(Parameter_request: Request, Parameter_env: Env, Parameter_context: ExecutionContext): Promise<Response> {
 		try {
 			// \/ Autentica admin pelo JWT
-			const Const_adminAuthenticated = await Function_getAdminAuthenticated(Parameter_request, Parameter_env, true)
+			const Const_adminAuthenticated = await Function_getAdminAuthenticated(Parameter_request, Parameter_env, false)
 			if (Function_isError(Const_adminAuthenticated)) {
 				return Function_getResponseError(Const_adminAuthenticated, 451, 'Unauthorized admin JWT')
 			}
@@ -219,8 +219,7 @@ export class Class_PostAdminConteudo {
 				const Const_previewUploadResult = await Function_postContentFileToR2(Parameter_env, Let_previewFileUuidContent, Let_previewFileValidated.file, Let_previewFileValidated.contentType, {
 					content_uuid: Const_contentUuidFinal,
 					file_role: 'preview',
-					student_uuid: Const_studentUuidContent,
-					admin_uuid: Const_adminAuthenticated.admin_uuid
+					student_uuid: Const_studentUuidContent
 				})
 				if (Function_isError(Const_previewUploadResult)) {
 					return Function_getResponseError(Const_previewUploadResult, 465, 'Error uploading preview file to R2')
@@ -234,8 +233,7 @@ export class Class_PostAdminConteudo {
 				const Const_fullUploadResult = await Function_postContentFileToR2(Parameter_env, Let_fullFileUuidContent, Let_fullFileValidated.file, Let_fullFileValidated.contentType, {
 					content_uuid: Const_contentUuidFinal,
 					file_role: 'full',
-					student_uuid: Const_studentUuidContent,
-					admin_uuid: Const_adminAuthenticated.admin_uuid
+					student_uuid: Const_studentUuidContent
 				})
 				if (Function_isError(Const_fullUploadResult)) {
 					await Function_deleteUploadedFileUuidArrayByBestEffort(Parameter_env, Const_uploadedFileUuidArray)
@@ -247,7 +245,7 @@ export class Class_PostAdminConteudo {
 			// /\ Faz upload opcional dos arquivos para o R2
 
 			// \/ Cria conteudo no D1
-			const Const_contentCreated = await Function_postD1(Parameter_env, 'content', {
+			let Let_contentCreated = await Function_postD1(Parameter_env, 'content', {
 				content_uuid: Const_contentUuidFinal,
 				name_content: Const_nameContent,
 				student_uuid_content: Const_studentUuidContent,
@@ -261,14 +259,60 @@ export class Class_PostAdminConteudo {
 				prevision_content: Const_body.prevision_content,
 				verified_content: Const_verifiedContent
 			}, ['*'])
-			if (Function_isError(Const_contentCreated)) {
+
+			// Se recebeu erro de UNIQUE constraint, deleta o existente e tenta novamente
+			if (Function_isError(Let_contentCreated)) {
+				if (Let_contentCreated.typ === 'catch') {
+					// Busca o conteúdo existente
+					const Const_existingContentArray = await Function_getD1(Parameter_env, 'content', 1, 1, ['*'], { content_uuid: Const_contentUuidFinal })
+					if (!Function_isError(Const_existingContentArray) && Const_existingContentArray.length > 0) {
+						const Const_existingContent = Const_existingContentArray[0]
+
+						// Deleta arquivos do R2 se existirem
+						if (Const_existingContent.preview_file_uuid_content) {
+							const Const_deletePreviewResult = await Function_deleteContentFileFromR2(Parameter_env, Const_existingContent.preview_file_uuid_content)
+							if (Function_isError(Const_deletePreviewResult)) {
+								console.log(`> WARNING [${Const_deletePreviewResult.typ}] Failed to delete preview file: ${Const_existingContent.preview_file_uuid_content}`)
+							}
+						}
+						if (Const_existingContent.full_file_uuid_content) {
+							const Const_deleteFullResult = await Function_deleteContentFileFromR2(Parameter_env, Const_existingContent.full_file_uuid_content)
+							if (Function_isError(Const_deleteFullResult)) {
+								console.log(`> WARNING [${Const_deleteFullResult.typ}] Failed to delete full file: ${Const_existingContent.full_file_uuid_content}`)
+							}
+						}
+
+						// Deleta conteúdo do D1
+						const Const_deleteContentResult = await Function_deleteD1(Parameter_env, 'content', { content_uuid: Const_contentUuidFinal })
+						if (!Function_isError(Const_deleteContentResult)) {
+							// Tenta inserir novamente
+							Let_contentCreated = await Function_postD1(Parameter_env, 'content', {
+								content_uuid: Const_contentUuidFinal,
+								name_content: Const_nameContent,
+								student_uuid_content: Const_studentUuidContent,
+								old_price_content: Let_oldPriceContent,
+								current_price_content: Const_currentPriceContent,
+								preview_file_uuid_content: Let_previewFileUuidContent,
+								full_file_uuid_content: Let_fullFileUuidContent,
+								college_uuid_content: Const_collegeUuidContent,
+								course_uuid_content: Const_courseUuidContent,
+								class_content: Const_body.class_content,
+								prevision_content: Const_body.prevision_content,
+								verified_content: Const_verifiedContent
+							}, ['*'])
+						}
+					}
+				}
+			}
+
+			if (Function_isError(Let_contentCreated)) {
 				await Function_deleteUploadedFileUuidArrayByBestEffort(Parameter_env, Const_uploadedFileUuidArray)
-				return Function_getResponseError(Const_contentCreated, 467, 'Error creating admin content')
+				return Function_getResponseError(Let_contentCreated, 467, 'Error creating admin content')
 			}
 			// /\ Cria conteudo no D1
 
 			const Const_responseBody: Type_PostAdminConteudoResponse = {
-				content: Const_contentCreated
+				content: Let_contentCreated
 			}
 
 			return new Response(JSON.stringify(Const_responseBody), {

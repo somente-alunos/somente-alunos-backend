@@ -18,7 +18,7 @@ export class Class_PostAdminConteudoFile {
 	public static async main(Parameter_request: Request, Parameter_env: Env, Parameter_context: ExecutionContext): Promise<Response> {
 		try {
 			// \/ Autentica admin pelo JWT
-			const Const_adminAuthenticated = await Function_getAdminAuthenticated(Parameter_request, Parameter_env, true)
+			const Const_adminAuthenticated = await Function_getAdminAuthenticated(Parameter_request, Parameter_env, false)
 			if (Function_isError(Const_adminAuthenticated)) {
 				return Function_getResponseError(Const_adminAuthenticated, 451, 'Unauthorized admin JWT')
 			}
@@ -70,8 +70,7 @@ export class Class_PostAdminConteudoFile {
 			const Const_uploadResult = await Function_postContentFileToR2(Parameter_env, Const_newFileUuidContent, Const_fileValidated.file, Const_fileValidated.contentType, {
 				content_uuid: Const_contentUuid,
 				file_role: Const_fileRole,
-				student_uuid: Const_content.student_uuid_content,
-				admin_uuid: Const_adminAuthenticated.admin_uuid
+				student_uuid: Const_content.student_uuid_content
 			})
 			if (Function_isError(Const_uploadResult)) {
 				return Function_getResponseError(Const_uploadResult, 457, 'Error uploading content file to R2')
