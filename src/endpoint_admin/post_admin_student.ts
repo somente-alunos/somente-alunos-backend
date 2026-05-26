@@ -15,8 +15,35 @@ type Type_PostAdminStudentResponse = {
 	student: Type_objectAdminStudentResponse;
 }
 
+function Function_generateCode3Digit_LEGACY(Parameter_cpfOrRa: string, Parameter_env: Env): string {
+    const Const_cpfOrRaClear = String(Parameter_cpfOrRa).replace(/\D/g, '')
 
-function Function_generateInvitationCodeStudentSixDigits(): string {
+    const Const_secretKey = Parameter_env.EnvSecret_secretKeyForGenerateCode6DigitLegacy
+    const Const_dataForHash = `${Const_cpfOrRaClear}-${Const_secretKey}`
+
+    let Let_hash = 0
+    for (let Let_i = 0; Let_i < Const_dataForHash.length; Let_i++) {
+        const Const_char = Const_dataForHash.charCodeAt(Let_i)
+        Let_hash = (Let_hash << 5) - Let_hash + Const_char
+        Let_hash |= 0
+    }
+
+    const Const_code = Math.abs(Let_hash).toString().padStart(6, '0').slice(0, 3)
+    return Const_code
+}
+
+function Function_generateCode6Digit_LEGACY(Parameter_cpf: string, Parameter_ra: string, Parameter_env: Env): string {
+    const Const_cpfCode = Function_generateCode3Digit_LEGACY(Parameter_cpf, Parameter_env)
+    const Const_raCode = Function_generateCode3Digit_LEGACY(Parameter_ra, Parameter_env)
+
+    return `${Const_cpfCode}${Const_raCode}`
+}
+
+function Function_generateInvitationCodeStudentSixDigits(Parameter_isLegacy?: 'legacy', Parameter_cpf?: string, Parameter_ra?: string, Parameter_env?: Env): string {
+	if (Parameter_isLegacy === 'legacy' && typeof Parameter_cpf === 'string' && typeof Parameter_ra === 'string' && Parameter_env) {
+		return Function_generateCode6Digit_LEGACY(Parameter_cpf, Parameter_ra, Parameter_env)
+	}
+
 	return Math.floor(Math.random() * 1000000).toString().padStart(6, '0')
 }
 
@@ -108,9 +135,15 @@ export class Class_PostAdminStudent {
 			const Const_studentUuid = crypto.randomUUID()
 			let Let_studentCreated: Type_tableD1StudentGet | null = null
 			let Let_attempt = 1
+			let Let_invitationCodeStudent = ''
 			for (Let_attempt = 1; Let_attempt <= 10; Let_attempt++) {
-				const Const_invitationCodeStudent = Function_generateInvitationCodeStudentSixDigits()
-				const Const_studentSameInvitationCodeArray = await Function_getD1(Parameter_env, 'student', 1, 1, ['student_uuid'], { invitation_code_student: Const_invitationCodeStudent })
+				if (Let_attempt === 1) {
+					Let_invitationCodeStudent = Function_generateInvitationCodeStudentSixDigits('legacy', Const_cpfStudent, Const_raStudent, Parameter_env)
+				}
+				else {
+					Let_invitationCodeStudent = Function_generateInvitationCodeStudentSixDigits()
+				}
+				const Const_studentSameInvitationCodeArray = await Function_getD1(Parameter_env, 'student', 1, 1, ['student_uuid'], { invitation_code_student: Let_invitationCodeStudent })
 				if (Function_isError(Const_studentSameInvitationCodeArray)) {
 					return Function_getResponseError(Const_studentSameInvitationCodeArray, 461, 'Error checking duplicated invitation code')
 				}
@@ -121,7 +154,7 @@ export class Class_PostAdminStudent {
 
 				const Const_studentCreatedAttempt = await Function_postD1(Parameter_env, 'student', {
 					student_uuid: Const_studentUuid,
-					invitation_code_student: Const_invitationCodeStudent,
+					invitation_code_student: Let_invitationCodeStudent,
 					ra_student: Const_raStudent,
 					cpf_student: Const_cpfStudent,
 					college_uuid_student: Let_collegeUuidStudent,
