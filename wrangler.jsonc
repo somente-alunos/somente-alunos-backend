@@ -46,6 +46,14 @@
 				},
 			],
 
+			// KV Production
+			"kv_namespaces": [
+				{
+					"binding": "KV_somenteAlunosAll2",
+					"id": "1c77f310ea85444185d89ef80374dc26",
+				},
+			],
+
 			// Mtls Certificates Production
 			"mtls_certificates": [
 				{
@@ -136,6 +144,14 @@
 				},
 			],
 
+			// KV Dev
+			"kv_namespaces": [
+				{
+					"binding": "KV_somenteAlunosAll2",
+					"id": "2d009c95f3854370b2c91d48e7bae638",
+				},
+			],
+
 			// Mtls Certificates Dev
 			"mtls_certificates": [
 				{
@@ -223,6 +239,14 @@
 					"binding": "R2_somenteAlunosAll2",
 					"bucket_name": "somente-alunos-all-2-local",
 					"preview_bucket_name": "somente-alunos-all-2-local",
+				},
+			],
+
+			// KV Local
+			"kv_namespaces": [
+				{
+					"binding": "KV_somenteAlunosAll2",
+					"id": "1c77f310ea85444185d89ef80374d000",
 				},
 			],
 

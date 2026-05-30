@@ -1,14 +1,14 @@
-import { Function_getD1, Function_getFuncionName, Function_getResponseError, Function_getTrimmedStringOrUndefined, Function_isError, Function_patchD1, Function_postD1 } from "../function_global"
+import { Function_getD1, Function_getFuncionName, Function_getResponseError, Function_getTrimmedStringOrUndefined, Function_isError, Function_patchD1, Function_postD1, Function_generateAcessTokenEfi, Function_getNotificationPaymentEfi } from "../function_global"
 
 
 type Type_PostEfiBankWebhookBody = {
-	pix: {
+	pix?: {
 		endToEndId: string;
 		txid: string;
 		chave: string;
 		valor: string;
 		horario: string;
-		gnExtras: {
+		gnExtras?: {
 			pagador: {
 				nome: string;
 				cpf: string;
@@ -16,6 +16,7 @@ type Type_PostEfiBankWebhookBody = {
 			}
 		}
 	}[];
+	notification?: string;
 }
 
 export class Class_PostEfiBankWebhook {
@@ -31,14 +32,46 @@ export class Class_PostEfiBankWebhook {
 
 			// \/ Le payload JSON do webhook
 			const Const_body = await Parameter_request.json() as Type_PostEfiBankWebhookBody
-			const Const_txidBody = Const_body?.pix?.[0]?.txid // order_uuid Without Dashe "2f45800d86564b07997e892598e775ba"
-			if (typeof Const_txidBody !== 'string') {
-				return Function_getResponseError({ typ: 'logical', msg: 'Invalid webhook payload: missing txid', inf: { body: Const_body }, loc: Function_getFuncionName(), err: true }, 454, 'Invalid webhook payload')
+			let Const_orderUuidWithDashe: string;
+
+			if (Const_body.pix && Array.isArray(Const_body.pix) && Const_body.pix.length > 0) {
+				// PIX
+				const Const_txidBody = Const_body.pix[0].txid // order_uuid Without Dashe "2f45800d86564b07997e892598e775ba"
+				if (typeof Const_txidBody !== 'string') {
+					return Function_getResponseError({ typ: 'logical', msg: 'Invalid webhook payload: missing txid in pix array', inf: { body: Const_body }, loc: Function_getFuncionName(), err: true }, 457, 'Invalid webhook payload')
+				}
+
+				Const_orderUuidWithDashe = Const_txidBody.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5') // order_uuid With Dashe "2f45800d-8656-4b07-997e-892598e775ba"
+				if (typeof Const_orderUuidWithDashe !== 'string' || Const_orderUuidWithDashe.length !== 36) {
+					return Function_getResponseError({ typ: 'logical', msg: 'Invalid webhook payload: txid format is invalid for order UUID', inf: { txid: Const_txidBody }, loc: Function_getFuncionName(), err: true }, 458, 'Invalid webhook payload')
+				}
 			}
 
-			const Const_orderUuidWithDashe = Const_txidBody.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5') // order_uuid With Dashe "2f45800d-8656-4b07-997e-892598e775ba"
-			if (typeof Const_orderUuidWithDashe !== 'string') {
-				return Function_getResponseError({ typ: 'logical', msg: 'Invalid webhook payload: txid format is invalid for order UUID', inf: { txid: Const_txidBody }, loc: Function_getFuncionName(), err: true }, 455, 'Invalid webhook payload')
+			else if (Const_body.notification) {
+				// Cartao de credito
+				const Const_generateAcessTokenEfi = await Function_generateAcessTokenEfi(Parameter_env);
+				if (Function_isError(Const_generateAcessTokenEfi)) {
+					return Function_getResponseError(Const_generateAcessTokenEfi, 454, 'Error generating Efi access token to process notification')
+				}
+
+				const Const_notificationData = await Function_getNotificationPaymentEfi(Parameter_env, Const_generateAcessTokenEfi, Const_body.notification);
+				if (Function_isError(Const_notificationData)) {
+					return Function_getResponseError(Const_notificationData, 455, 'Error getting Efi payment notification detail')
+				}
+
+				if (Const_notificationData.currentStatus !== 'paid') {
+					console.log(`[INF] [Efi Bank Webhook] [Class_PostEfiBankWebhook] Ignorando notificacao pois status não é paid. Status atual: ${Const_notificationData.currentStatus}`)
+					return new Response('Notificação recebida, mas ignorada (status != paid).', { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } })
+				}
+
+				Const_orderUuidWithDashe = Const_notificationData.customId
+				if (typeof Const_orderUuidWithDashe !== 'string') {
+					return Function_getResponseError({ typ: 'logical', msg: 'Invalid webhook notification: missing custom_id', inf: { notificationData: Const_notificationData }, loc: Function_getFuncionName(), err: true }, 456, 'Invalid webhook notification data')
+				}
+			}
+
+			else {
+				return Function_getResponseError({ typ: 'logical', msg: 'Invalid webhook payload: missing pix or notification fields', inf: { body: Const_body }, loc: Function_getFuncionName(), err: true }, 459, 'Invalid webhook payload')
 			}
 			// /\ Le payload JSON do webhook
 

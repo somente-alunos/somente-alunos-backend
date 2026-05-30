@@ -1120,3 +1120,92 @@ export async function Function_getWebhooksEfi(Parameter_env: Env, Parameter_acce
 		return { typ: 'catch', msg: 'Error fetching Efi webhooks', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
 	}
 }
+
+export async function Function_generatePaymentLinkEfi(Parameter_env: Env, Parameter_accessToken: string, Parameter_items: Array<{ name: string, value: number, amount: number }>, Parameter_orderUuid: string): Type_errorOr<Promise<{ payment_url: string }>> {
+	try {
+		// Sem MTLS pois é /v1/
+		const Const_postLinkFetch = await fetch(`https://api.efipay.com.br/v1/charge/one-step/link`, {
+			method: "POST",
+			headers: {
+				"Authorization": `Bearer ${Parameter_accessToken}`,
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				items: Parameter_items,
+				metadata: {
+					custom_id: Parameter_orderUuid,
+					notification_url: `${Parameter_env.Env_webhookUrlBase}`
+				},
+				settings: {
+					payment_method: "credit_card",
+    				expire_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // "2025-02-08" // dia atual + 3 dias, no formato YYYY-MM-DD
+					message: "Conteúdo de estudo - Somente Alunos",
+					request_delivery_address: false
+				}
+			})
+		})
+
+		const Const_postLinkJson = await Const_postLinkFetch.json() as { code: number; data: { barcode: string; charge_id: number; payment_url: string; } }
+
+		if (!Const_postLinkFetch.ok) {
+			console.log(`[ERROR] [Post payment link fetch retornou status !ok] [Function_generatePaymentLinkEfi] [Status]: ${Const_postLinkFetch.status} Response json:`, Const_postLinkJson)
+			return { typ: 'logical', msg: 'Error generating Efi payment link, response status not ok', inf: { status: Const_postLinkFetch.status, responseJson: Const_postLinkJson }, loc: Function_getFuncionName(), err: true }
+		}
+
+		if (!Const_postLinkJson?.data?.payment_url) {
+			return { typ: 'logical', msg: 'Error generating Efi payment link, payment_url missing', inf: { responseJson: Const_postLinkJson }, loc: Function_getFuncionName(), err: true }
+		}
+
+		return { payment_url: Const_postLinkJson.data.payment_url }
+	}
+	catch (Parameter_error) {
+		console.log("[CATCH] [Erro catch] [Function_generatePaymentLinkEfi] Error generating payment link:", Parameter_error)
+		return { typ: 'catch', msg: 'Error generating Efi payment link', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
+	}
+}
+
+export async function Function_getNotificationPaymentEfi(Parameter_env: Env, Parameter_accessToken: string, Parameter_token: string): Type_errorOr<Promise<{ customId: string, currentStatus: string }>> {
+	try {
+		// Sem MTLS pois é /v1/
+		const Const_getNotificationFetch = await fetch(`https://api.efipay.com.br/v1/notification/${Parameter_token}`, {
+			method: "GET",
+			headers: {
+				"Authorization": `Bearer ${Parameter_accessToken}`,
+				"Content-Type": "application/json"
+			}
+		})
+
+		const Const_getNotificationJson = await Const_getNotificationFetch.json() as { code: number; data: Array<{ id: number; type: string; custom_id: string; status: { current: string }; created_at: string }> }
+
+		if (!Const_getNotificationFetch.ok) {
+			console.log(`[ERROR] [Get notification fetch retornou status !ok] [Function_getNotificationPaymentEfi] [Status]: ${Const_getNotificationFetch.status} Response json:`, Const_getNotificationJson)
+			return { typ: 'logical', msg: 'Error fetching Efi payment notification, response status not ok', inf: { status: Const_getNotificationFetch.status, responseJson: Const_getNotificationJson }, loc: Function_getFuncionName(), err: true }
+		}
+
+		const Const_dataArray = Const_getNotificationJson?.data || []
+		if (Const_dataArray.length === 0) {
+			return { typ: 'logical', msg: 'Efi payment notification data array is empty', inf: { responseJson: Const_getNotificationJson }, loc: Function_getFuncionName(), err: true }
+		}
+
+		let Let_customId = ''
+		let Let_currentStatus = ''
+		for (const Const_statusSingle of Const_dataArray) {
+			if (Const_statusSingle?.status?.current === 'paid') {
+				Let_customId = Const_statusSingle?.custom_id || ''
+				Let_currentStatus = Const_statusSingle?.status?.current || ''
+				break
+			}
+		}
+
+		if (!Let_customId || !Let_currentStatus) {
+			return { typ: 'logical', msg: 'Efi payment notification missing custom_id or status.current in latest status', inf: { latestStatus: { custom_id: Let_customId, status: { current: Let_currentStatus } } }, loc: Function_getFuncionName(), err: true }
+		}
+
+		return { customId: Let_customId, currentStatus: Let_currentStatus }
+	}
+
+	catch (Parameter_error) {
+		console.log("[CATCH] [Erro catch] [Function_getNotificationPaymentEfi] Error fetching Efi payment notification:", Parameter_error)
+		return { typ: 'catch', msg: 'Error fetching Efi payment notification', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
+	}
+}

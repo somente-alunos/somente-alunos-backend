@@ -1,4 +1,4 @@
-import { Function_getD1, Function_getFuncionName, Function_getResponseError, Function_getStudentAuthenticated, Function_isError, Function_postD1, Function_generateAcessTokenEfi, Function_generateCreatePaymentPixEfi } from "../function_global"
+import { Function_getD1, Function_getFuncionName, Function_getResponseError, Function_getStudentAuthenticated, Function_isError, Function_postD1, Function_generateAcessTokenEfi, Function_generateCreatePaymentPixEfi, Function_generatePaymentLinkEfi } from "../function_global"
 
 
 type Type_PostStudentGerarCobrancaBody = {
@@ -66,12 +66,11 @@ export class Class_PostStudentGerarCobranca {
 			// /\ Carrega conteudos e calcula valor total
 
 			// \/ Cria order para a cobranca
-			const Const_contentUuidArrayBodyString = JSON.stringify(Const_contentUuidArrayBody)
-			const Const_orderUuid = crypto.randomUUID()
+			const Const_contentUuidArrayBodyString = JSON.stringify([...Const_contentUuidArrayBody].sort())
 
-			const Const_orderCreated = await Function_postD1(Parameter_env, 'order', {
-				order_uuid: Const_orderUuid,
-
+			// Vê se ja existe uma order com o mesmos parametros
+			let Let_orderUuid = ''
+			const Const_existingOrder = await Function_getD1(Parameter_env, 'order', 1, 1, ['order_uuid'], {
 				student_uuid_buyer_order: Const_studentAuthenticated.student_uuid,
 				content_uuid_array_order: Const_contentUuidArrayBodyString,
 
@@ -79,13 +78,51 @@ export class Class_PostStudentGerarCobranca {
 				method_order: Const_methodBody,
 
 				status_order: 'waiting'
-			}, ['*'])
-			if (Function_isError(Const_orderCreated)) {
-				return Function_getResponseError(Const_orderCreated, 464, 'Error creating order for PIX charge')
+			})
+			if (Function_isError(Const_existingOrder)) {
+				return Function_getResponseError(Const_existingOrder, 462, 'Error checking for existing order before creating new order for PIX charge')
+			}
+
+			if (!Const_existingOrder?.[0]?.order_uuid) {
+				Let_orderUuid = crypto.randomUUID()
+
+				const Const_orderCreated = await Function_postD1(Parameter_env, 'order', {
+					order_uuid: Let_orderUuid,
+
+					student_uuid_buyer_order: Const_studentAuthenticated.student_uuid,
+					content_uuid_array_order: Const_contentUuidArrayBodyString,
+
+					total_amount_order: Number(Let_totalAmount.toFixed(2)),
+					method_order: Const_methodBody,
+
+					status_order: 'waiting'
+				}, ['*'])
+				if (Function_isError(Const_orderCreated)) {
+					return Function_getResponseError(Const_orderCreated, 464, 'Error creating order for PIX charge')
+				}
+			}
+
+			else {
+				Let_orderUuid = Const_existingOrder[0].order_uuid
 			}
 			// /\ Cria order para a cobranca
 
+			// \/ Confere se ja existe no cache
+			const Const_cacheKey = `cobranca_${Let_orderUuid}`
+			const Const_cacheExisting = await Parameter_env?.KV_somenteAlunosAll2?.get(Const_cacheKey)
+
+			if (typeof Const_cacheExisting === 'string') {
+				const Const_cacheExistingParsed = JSON.parse(Const_cacheExisting) as Type_PostStudentGerarCobrancaResponse
+
+				if (Const_cacheExistingParsed && typeof Const_cacheExistingParsed === 'object' && (Const_cacheExistingParsed.pixCopiaECola || Const_cacheExistingParsed.payment_url)) {
+					return new Response(JSON.stringify(Const_cacheExistingParsed), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } })
+				}
+			}
+			// /\ Confere se ja existe no cache
+
 			// \/ Cria cobranca na Efi
+			let Let_responseBody: Type_PostStudentGerarCobrancaResponse | null = null
+
 			if (Const_methodBody === 'pix') {
 				// \/ Cria cobranca PIX
 				const Const_generateAcessTokenEfi = await Function_generateAcessTokenEfi(Parameter_env)
@@ -94,7 +131,7 @@ export class Class_PostStudentGerarCobranca {
 				}
 
 				const Const_price = Let_totalAmount.toFixed(2)
-				const Const_orderUuidWithoutDashe = Const_orderUuid.replaceAll('-', '')
+				const Const_orderUuidWithoutDashe = Let_orderUuid.replaceAll('-', '')
 				const Const_name = `Conteúdo de estudo - Somente Alunos`
 				const Const_generateCreatePaymentPixEfi = await Function_generateCreatePaymentPixEfi(Parameter_env, Const_generateAcessTokenEfi, Const_price, Const_orderUuidWithoutDashe, Const_name)
 				if (Function_isError(Const_generateCreatePaymentPixEfi)) {
@@ -105,30 +142,50 @@ export class Class_PostStudentGerarCobranca {
 					return Function_getResponseError({ typ: 'logical', msg: 'Invalid pixCopiaECola returned from Efi', inf: { pixCopiaECola: Const_generateCreatePaymentPixEfi.pixCopiaECola }, loc: Function_getFuncionName(), err: true }, 467, 'Invalid pixCopiaECola returned from Efi')
 				}
 
-				const Const_responseBody: Type_PostStudentGerarCobrancaResponse = {
+				Let_responseBody = {
 					pixCopiaECola: Const_generateCreatePaymentPixEfi.pixCopiaECola,
 					contentUuidArray: Const_contentUuidArrayBody
 				}
-
-				return new Response(JSON.stringify(Const_responseBody), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } })
 				// /\ Cria cobranca PIX
 			}
 
 			else if (Const_methodBody === 'card_credit') {
-				// \/ Cria cobranca PIX
+				// \/ Cria cobranca Cartão de Credito
 				const Const_generateAcessTokenEfi = await Function_generateAcessTokenEfi(Parameter_env)
 				if (Function_isError(Const_generateAcessTokenEfi)) {
 					return Function_getResponseError(Const_generateAcessTokenEfi, 465, 'Error generating Efi access token for card credit charge')
 				}
 
-				// # Resto da logica
+				const Const_itemsArray = Const_contentArraySelected.map(Parameter_content => ({
+					name: Parameter_content.name_content,
+					value: Math.round(Parameter_content.current_price_content * 100),
+					amount: 1
+				}))
 
-				const Const_responseBody: Type_PostStudentGerarCobrancaResponse = {
-					payment_url: '',
-					contentUuidArray: Const_contentUuidArrayBody
+				const Const_generatePaymentLinkEfi = await Function_generatePaymentLinkEfi(Parameter_env, Const_generateAcessTokenEfi, Const_itemsArray, Let_orderUuid)
+				if (Function_isError(Const_generatePaymentLinkEfi)) {
+					return Function_getResponseError(Const_generatePaymentLinkEfi, 466, 'Error generating Efi payment link')
 				}
 
-				return new Response(JSON.stringify(Const_responseBody), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } })
+				if (typeof Const_generatePaymentLinkEfi.payment_url !== 'string' || Const_generatePaymentLinkEfi.payment_url.trim().length === 0) {
+					return Function_getResponseError({ typ: 'logical', msg: 'Invalid payment_url returned from Efi', inf: { payment_url: Const_generatePaymentLinkEfi.payment_url }, loc: Function_getFuncionName(), err: true }, 467, 'Invalid payment_url returned from Efi')
+				}
+
+				Let_responseBody = {
+					payment_url: Const_generatePaymentLinkEfi.payment_url,
+					contentUuidArray: Const_contentUuidArrayBody
+				}
+				// /\ Cria cobranca Cartão de Credito
+			}
+
+			if (Let_responseBody && typeof Let_responseBody === 'object' && (Let_responseBody.pixCopiaECola || Let_responseBody.payment_url)) {
+				// \/ Salva resposta no cache com validade de 38 horas (pix tem 48h e cartao de credito tem entre 49h a 72h)
+				await Parameter_env?.KV_somenteAlunosAll2?.put(Const_cacheKey, JSON.stringify(Let_responseBody), {
+					expirationTtl: 38 * 60 * 60 // 38 horas em segundos
+				})
+				// /\ Salva resposta no cache com validade de 38 horas (pix tem 48h e cartao de credito tem entre 49h a 72h)
+
+				return new Response(JSON.stringify(Let_responseBody), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } })
 			}
 			// /\ Cria cobranca na Efi
 
