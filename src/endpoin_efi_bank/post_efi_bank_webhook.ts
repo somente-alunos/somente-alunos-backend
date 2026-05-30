@@ -1,24 +1,6 @@
 import { Function_getD1, Function_getFuncionName, Function_getResponseError, Function_getTrimmedStringOrUndefined, Function_isError, Function_patchD1, Function_postD1 } from "../function_global"
 
 
-/* // resposta do webhook quando pago
-var webhookPago = {
-    "pix": [{
-        "endToEndId": "E00416968202601181401q7te1usMJen",
-        "txid": "ASD98AJUS8DAJS8SJA9DDSA0DAS0AS",
-        "chave": "463635db-d7bd-4b72-bded-3db137ee2566",
-        "valor": "1.00",
-        "horario": "2026-01-18T14:02:39.000Z",
-        "gnExtras": {
-            "pagador": {
-                "nome": "RAFAEL DA SILVA GONCALVES",
-                "cpf": "***.172.896-**",
-                "codigoBanco": "00416968"
-            }
-        }
-    }]
-} */
-
 type Type_PostEfiBankWebhookBody = {
 	pix: {
 		endToEndId: string;
