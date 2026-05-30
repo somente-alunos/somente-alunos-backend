@@ -71,6 +71,7 @@
 				"Env_hostnameFrontend": "somentealunos.vip",
 				"Env_cookiePrefix": "production",
 				"Env_environment": "production",
+				"Env_webhookUrlBase": "https://api.somentealunos.vip/post/efi-bank/webhook",
 
 				// Variables Secrets (They can be set here or in a .env.production file)
 				/* "EnvSecret_verifyStudentCpfOrRa": true,
@@ -160,6 +161,7 @@
 				"Env_hostnameFrontend": "somentealunos.vip",
 				"Env_cookiePrefix": "dev",
 				"Env_environment": "dev",
+				"Env_webhookUrlBase": "https://devapi.somentealunos.vip/post/efi-bank/webhook",
 
 				// Variables Secrets (They can be set here or in a .env.dev file)
 				/* "EnvSecret_verifyStudentCpfOrRa": true,
@@ -249,6 +251,7 @@
 				"Env_hostnameFrontend": "somentealunos.vip",
 				"Env_cookiePrefix": "local",
 				"Env_environment": "local",
+				"Env_webhookUrlBase": "https://localapi.somentealunos.vip/post/efi-bank/webhook",
 
 				// Variables Secrets (They can be set here or in a .env.local file)
 				/* "EnvSecret_verifyStudentCpfOrRa": true,

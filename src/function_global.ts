@@ -1055,7 +1055,7 @@ export async function Function_generateCreatePaymentPixEfi(Parameter_env: Env, P
 	}
 }
 
-export async function Function_configWebhookEfi(Parameter_env: Env, Parameter_accessToken: string, urlWebhook: string): Type_errorOr<Promise<boolean>> {
+export async function Function_configWebhookEfi(Parameter_env: Env, Parameter_accessToken: string): Type_errorOr<Promise<boolean>> {
 	try {
         // 1. Crie uma chave secreta para sua segurança (já que o mTLS estará desligado)
         // Você pode salvar isso no seu wrangler.toml como uma Secret
@@ -1063,20 +1063,19 @@ export async function Function_configWebhookEfi(Parameter_env: Env, Parameter_ac
         // 2. Monte a URL com o token e o parâmetro 'ignorar=' no final
         // Isso evita que a Efí adicione "/pix" e garante que só a Efí chame seu Worker
 
-		const Const_finalUrlWebhook = `${urlWebhook}?hmac=${Parameter_env.EnvSecret_tokenWebhookEfiBank}&ignorar=`
+		const Const_finalUrlWebhook = `${Parameter_env.Env_webhookUrlBase}?hmac=${Parameter_env.EnvSecret_tokenWebhookEfiBank}&ignorar=`
 
 		const Const_putWebhookFetch = await Parameter_env.MtlsCertificates_efiBankRC?.fetch(`https://pix.api.efipay.com.br/v2/webhook/${Parameter_env.EnvSecret_keyPixRC}`, {
-                method: "PUT",
-                headers: {
-                    "Authorization": `Bearer ${Parameter_accessToken}`,
-                    "Content-Type": "application/json",
-                    "x-skip-mtls-checking": "true"
-                },
-                body: JSON.stringify({
-                    webhookUrl: Const_finalUrlWebhook
-                })
-            }
-        )
+			method: "PUT",
+			headers: {
+				"Authorization": `Bearer ${Parameter_accessToken}`,
+				"Content-Type": "application/json",
+				"x-skip-mtls-checking": "true"
+			},
+			body: JSON.stringify({
+				webhookUrl: Const_finalUrlWebhook
+			})
+		})
 
 		if (!Const_putWebhookFetch?.ok) {
 			const Const_putWebhookText = await Const_putWebhookFetch?.text()
@@ -1090,5 +1089,34 @@ export async function Function_configWebhookEfi(Parameter_env: Env, Parameter_ac
 	catch (Parameter_error) {
 		console.log("[CATCH] [Erro catch] [Function_configWebhookEfi] Error configuring Efi webhook:", Parameter_error)
 		return { typ: 'catch', msg: 'Error configuring Efi webhook', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
+	}
+}
+
+export async function Function_getWebhooksEfi(Parameter_env: Env, Parameter_accessToken: string): Type_errorOr<Promise<{ webhooks: Array<{ webhookUrl: string; chave: string; criacao: string }> }>> {
+	try {
+		const Const_getWebhookFetch = await Parameter_env.MtlsCertificates_efiBankRC?.fetch(`https://pix.api.efipay.com.br/v2/webhook/${Parameter_env.EnvSecret_keyPixRC}`, {
+			method: "GET",
+			headers: {
+				"Authorization": `Bearer ${Parameter_accessToken}`,
+				"Content-Type": "application/json",
+				"x-skip-mtls-checking": "true"
+			}
+		})
+
+		if (!Const_getWebhookFetch?.ok) {
+			const Const_getWebhookText = await Const_getWebhookFetch?.text()
+			console.log(`[ERROR] [Get webhooks fetch retornou status !ok] [Function_getWebhooksEfi] [Status]: ${Const_getWebhookFetch?.status} Response text:`, Const_getWebhookText)
+			return { typ: 'logical', msg: 'Error fetching Efi webhooks, response status not ok', inf: { status: Const_getWebhookFetch?.status, responseText: Const_getWebhookText }, loc: Function_getFuncionName(), err: true }
+		}
+
+		const Const_responseBody = await Const_getWebhookFetch.json() as { webhooks?: Array<{ webhookUrl: string; chave: string; criacao: string }> }
+		const Const_webhookArray = Const_responseBody?.webhooks || []
+
+		return { webhooks: Const_webhookArray }
+	}
+
+	catch (Parameter_error) {
+		console.log("[CATCH] [Erro catch] [Function_getWebhooksEfi] Error fetching Efi webhooks:", Parameter_error)
+		return { typ: 'catch', msg: 'Error fetching Efi webhooks', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
 	}
 }
