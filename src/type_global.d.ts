@@ -28,47 +28,6 @@ type Type_payloadJwtAdmin = {
 	exp: number;
 };
 
-type Type_efiBankAlias = 'gp' | 'rp' | 'rc';
-
-type Type_efiBankOauthTokenResponse = {
-	access_token: string;
-	token_type: string;
-	expires_in: number;
-	scope: string;
-};
-
-type Type_efiBankCobResponse = {
-	status?: string;
-	txid?: string;
-	location?: string;
-	pixCopiaECola?: string;
-	calendario?: {
-		criacao?: string;
-		expiracao?: number | string;
-	};
-	valor?: {
-		original?: string;
-	};
-	nome?: string;
-	mensagem?: string;
-};
-
-type Type_efiBankWebhookPixItem = {
-	endToEndId?: string;
-	txid?: string;
-	chave?: string;
-	valor?: string;
-	horario?: string;
-	infoPagador?: string;
-	gnExtras?: unknown;
-	devolucoes?: Array<unknown>;
-};
-
-type Type_efiBankWebhookPayload = {
-	pix?: Array<Type_efiBankWebhookPixItem>;
-};
-
-
 
 // Type Object Student [...] Response
 type Type_objectStudentCollegeResponse = {

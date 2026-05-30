@@ -80,24 +80,20 @@ type Type_tableD1SaleHistoryGet = {
 	paid_to_seller_sale_history: string | null;
 }
 
-type Type_tableD1PixPaymentGet = {
-	pix_payment_id: number;
-	pix_payment_uuid: string;
-	pix_payment_created: string;
-	pix_payment_update: string;
+type Type_tableD1OrderGet = {
+	order_id: number;
+	order_uuid: string;
+	order_created: string;
+	order_update: string;
 
-	txid_pix_payment: string;
+	student_uuid_buyer_order: string;
+	content_uuid_array_order: string; // JSON parse Array<content_uuid>
 
-	student_uuid_buyer_pix_payment: string;
-	content_uuid_array_pix_payment: string; // JSON parse Array<content_uuid>
+	total_amount_order: number;
 
-	total_amount_pix_payment: number;
+	status_order: string;
 
-	status_pix_payment: string;
-	efi_bank_alias_pix_payment: string;
-
-	e2e_id_pix_payment: string | null;
-	webhook_payload_pix_payment: string | null;
+	webhook_payload_order: string | null;
 }
 
 type Type_tableD1DenunciaGet = {
@@ -196,21 +192,17 @@ type Type_tableD1SaleHistoryPost = {
 	paid_to_seller_sale_history?: Type_tableD1SaleHistoryGet['paid_to_seller_sale_history'];
 }
 
-type Type_tableD1PixPaymentPost = {
-	pix_payment_uuid: Type_tableD1PixPaymentGet['pix_payment_uuid'];
+type Type_tableD1OrderPost = {
+	order_uuid: Type_tableD1OrderGet['order_uuid'];
 
-	txid_pix_payment: Type_tableD1PixPaymentGet['txid_pix_payment'];
+	student_uuid_buyer_order: Type_tableD1OrderGet['student_uuid_buyer_order'];
+	content_uuid_array_order: Type_tableD1OrderGet['content_uuid_array_order'];
 
-	student_uuid_buyer_pix_payment: Type_tableD1PixPaymentGet['student_uuid_buyer_pix_payment'];
-	content_uuid_array_pix_payment: Type_tableD1PixPaymentGet['content_uuid_array_pix_payment'];
+	total_amount_order: Type_tableD1OrderGet['total_amount_order'];
 
-	total_amount_pix_payment: Type_tableD1PixPaymentGet['total_amount_pix_payment'];
+	status_order: Type_tableD1OrderGet['status_order'];
 
-	status_pix_payment: Type_tableD1PixPaymentGet['status_pix_payment'];
-	efi_bank_alias_pix_payment: Type_tableD1PixPaymentGet['efi_bank_alias_pix_payment'];
-
-	e2e_id_pix_payment?: Type_tableD1PixPaymentGet['e2e_id_pix_payment'];
-	webhook_payload_pix_payment?: Type_tableD1PixPaymentGet['webhook_payload_pix_payment'];
+	webhook_payload_order?: Type_tableD1OrderGet['webhook_payload_order'];
 }
 
 type Type_tableD1DenunciaPost = {
@@ -259,9 +251,8 @@ type Type_tableD1SaleHistoryPatch = {
 	sale_history_uuid: Type_tableD1SaleHistoryGet['sale_history_uuid'];
 }
 
-type Type_tableD1PixPaymentPatch = {
-	pix_payment_uuid?: Type_tableD1PixPaymentGet['pix_payment_uuid'];
-	txid_pix_payment?: Type_tableD1PixPaymentGet['txid_pix_payment'];
+type Type_tableD1OrderPatch = {
+	order_uuid?: Type_tableD1OrderGet['order_uuid'];
 }
 
 type Type_tableD1DenunciaPatch = {
@@ -295,9 +286,8 @@ type Type_tableD1SaleHistoryDelete = {
 	sale_history_uuid: Type_tableD1SaleHistoryGet['sale_history_uuid'];
 }
 
-type Type_tableD1PixPaymentDelete = {
-	pix_payment_uuid?: Type_tableD1PixPaymentGet['pix_payment_uuid'];
-	txid_pix_payment?: Type_tableD1PixPaymentGet['txid_pix_payment'];
+type Type_tableD1OrderDelete = {
+	order_uuid?: Type_tableD1OrderGet['order_uuid'];
 }
 
 type Type_tableD1DenunciaDelete = {
@@ -310,7 +300,7 @@ type Type_tableD1AdminDelete = {
 
 
 
-type Type_orNameTableD1 = 'student' | 'college' | 'course' | 'content' | 'sale_history' | 'pix_payment' | 'denuncia' | 'admin';
+type Type_orNameTableD1 = 'student' | 'college' | 'course' | 'content' | 'sale_history' | 'order' | 'denuncia' | 'admin';
 
 
 
@@ -320,7 +310,7 @@ type Type_mapTableD1Get = {
 	course: Type_tableD1CourseGet;
 	content: Type_tableD1ContentGet;
 	sale_history: Type_tableD1SaleHistoryGet;
-	pix_payment: Type_tableD1PixPaymentGet;
+	order: Type_tableD1OrderGet;
 	denuncia: Type_tableD1DenunciaGet;
 	admin: Type_tableD1AdminGet;
 }
@@ -331,7 +321,7 @@ type Type_mapTableD1Post = {
 	course: Type_tableD1CoursePost;
 	content: Type_tableD1ContentPost;
 	sale_history: Type_tableD1SaleHistoryPost;
-	pix_payment: Type_tableD1PixPaymentPost;
+	order: Type_tableD1OrderPost;
 	denuncia: Type_tableD1DenunciaPost;
 	admin: Type_tableD1AdminPost;
 }
@@ -342,7 +332,7 @@ type Type_mapTableD1Patch = {
 	course: Type_tableD1CoursePatch;
 	content: Type_tableD1ContentPatch;
 	sale_history: Type_tableD1SaleHistoryPatch;
-	pix_payment: Type_tableD1PixPaymentPatch;
+	order: Type_tableD1OrderPatch;
 	denuncia: Type_tableD1DenunciaPatch;
 	admin: Type_tableD1AdminPatch;
 }
@@ -353,7 +343,7 @@ type Type_mapTableD1Delete = {
 	course: Type_tableD1CourseDelete;
 	content: Type_tableD1ContentDelete;
 	sale_history: Type_tableD1SaleHistoryDelete;
-	pix_payment: Type_tableD1PixPaymentDelete;
+	order: Type_tableD1OrderDelete;
 	denuncia: Type_tableD1DenunciaDelete;
 	admin: Type_tableD1AdminDelete;
 }

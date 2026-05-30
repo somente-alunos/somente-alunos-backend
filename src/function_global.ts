@@ -451,354 +451,6 @@ export async function Function_verifyStudentCpfOrRaExternalApi(Parameter_raOrCpf
 	}
 }
 
-type Type_efiBankCredentialResolved = {
-	efiBankAlias: Type_efiBankAlias;
-	pixKey: string;
-	clientId: string;
-	clientSecret: string;
-	mtlsFetcher: Fetcher;
-	baseUrl: string;
-}
-
-type Type_efiBankAccessResolved = {
-	efiBankAlias: Type_efiBankAlias;
-	pixKey: string;
-	mtlsFetcher: Fetcher;
-	baseUrl: string;
-	accessToken: string;
-	tokenType: string;
-	expiresIn: number;
-	scope: string;
-}
-
-async function Function_getResponseTextAndJson(Parameter_response: Response): Promise<{ text: string; json: unknown | undefined; }> {
-	const Const_text = await Parameter_response.text()
-	try {
-		return { text: Const_text, json: JSON.parse(Const_text) as unknown }
-	}
-	catch {
-		return { text: Const_text, json: undefined }
-	}
-}
-
-export function Function_isValidEfiBankTxid(Parameter_txid: string): boolean {
-	return typeof Parameter_txid === 'string' && /^[a-zA-Z0-9]{26,35}$/.test(Parameter_txid)
-}
-
-export function Function_generateEfiBankTxid(Parameter_entropySeed: string = ''): string {
-	let Let_txid = ''
-	let Let_attempt = 0
-	while (!Function_isValidEfiBankTxid(Let_txid) && Let_attempt < 10) {
-		Let_attempt += 1
-		const Const_entropy = `${Parameter_entropySeed}${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '')}${Math.random().toString(36).replace('.', '')}${Let_attempt.toString(36)}`
-		Let_txid = Const_entropy.replace(/[^a-zA-Z0-9]/g, '').slice(0, 35)
-		if (Let_txid.length < 26) {
-			const Const_fill = crypto.randomUUID().replace(/[^a-zA-Z0-9]/g, '')
-			Let_txid = `${Let_txid}${Const_fill}`.slice(0, 35)
-		}
-	}
-
-	if (!Function_isValidEfiBankTxid(Let_txid)) {
-		const Const_fallback = `${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`.replace(/[^a-zA-Z0-9]/g, '')
-		Let_txid = Const_fallback.slice(0, 35)
-		if (Let_txid.length < 26) {
-			Let_txid = `${Let_txid}ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`.slice(0, 26)
-		}
-	}
-
-	return Let_txid
-}
-
-function Function_getEfiBankBaseUrl(Parameter_env: Env): string {
-	return Parameter_env.Env_environment === 'production' ? 'https://pix.api.efipay.com.br' : 'https://pix-h.api.efipay.com.br'
-}
-
-function Function_getEfiBankAliasArray(Parameter_efiBankAliasPreferred?: Type_efiBankAlias): Array<Type_efiBankAlias> {
-	const Const_aliasArray: Array<Type_efiBankAlias> = []
-	if (Parameter_efiBankAliasPreferred === 'gp' || Parameter_efiBankAliasPreferred === 'rp' || Parameter_efiBankAliasPreferred === 'rc') {
-		Const_aliasArray.push(Parameter_efiBankAliasPreferred)
-	}
-
-	for (const Const_alias of ['gp', 'rp', 'rc'] as Array<Type_efiBankAlias>) {
-		if (!Const_aliasArray.includes(Const_alias)) {
-			Const_aliasArray.push(Const_alias)
-		}
-	}
-
-	return Const_aliasArray
-}
-
-export function Function_getEfiBankAliasOrUndefined(Parameter_value: unknown): Type_efiBankAlias | undefined {
-	const Const_alias = Function_getTrimmedStringOrUndefined(Parameter_value)?.toLowerCase()
-	if (Const_alias === 'gp' || Const_alias === 'rp' || Const_alias === 'rc') {
-		return Const_alias
-	}
-
-	return undefined
-}
-
-export function Function_getEfiWebhookToken(Parameter_env: Env): Type_errorOr<string> {
-	try {
-		const Const_webhookToken = Function_getTrimmedStringOrUndefined(Parameter_env.EnvSecret_tokenWebhookEfiBank)
-		if (typeof Const_webhookToken !== 'string') {
-			return { typ: 'logical', msg: 'Invalid Efi webhook token in environment', inf: { EnvSecret_tokenWebhookEfiBank: Parameter_env.EnvSecret_tokenWebhookEfiBank }, loc: Function_getFuncionName(), err: true }
-		}
-
-		return Const_webhookToken
-	}
-
-	catch (Parameter_error) {
-		return { typ: 'catch', msg: 'Error getting Efi webhook token', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
-	}
-}
-
-export function Function_getEfiBankCredentialResolved(Parameter_env: Env, Parameter_efiBankAliasPreferred?: Type_efiBankAlias): Type_errorOr<Type_efiBankCredentialResolved> {
-	try {
-		const Const_efiBankAliasArray = Function_getEfiBankAliasArray(Parameter_efiBankAliasPreferred)
-		for (const Const_efiBankAlias of Const_efiBankAliasArray) {
-			const Const_pixKey = Function_getTrimmedStringOrUndefined(Const_efiBankAlias === 'gp' ? Parameter_env.EnvSecret_keyPixGP : Const_efiBankAlias === 'rp' ? Parameter_env.EnvSecret_keyPixRP : Parameter_env.EnvSecret_keyPixRC)
-			const Const_clientId = Function_getTrimmedStringOrUndefined(Const_efiBankAlias === 'gp' ? Parameter_env.EnvSecret_keyClientIdEfiBankGP : Const_efiBankAlias === 'rp' ? Parameter_env.EnvSecret_keyClientIdEfiBankRP : Parameter_env.EnvSecret_keyClientIdEfiBankRC)
-			const Const_clientSecret = Function_getTrimmedStringOrUndefined(Const_efiBankAlias === 'gp' ? Parameter_env.EnvSecret_keyClientSecretEfiBankGP : Const_efiBankAlias === 'rp' ? Parameter_env.EnvSecret_keyClientSecretEfiBankRP : Parameter_env.EnvSecret_keyClientSecretEfiBankRC)
-			const Const_mtlsFetcher = Const_efiBankAlias === 'gp' ? Parameter_env.MtlsCertificates_efiBankGP : Const_efiBankAlias === 'rp' ? Parameter_env.MtlsCertificates_efiBankRP : Parameter_env.MtlsCertificates_efiBankRC
-			const Const_isValidCredential = typeof Const_pixKey === 'string' && typeof Const_clientId === 'string' && typeof Const_clientSecret === 'string' && !!Const_mtlsFetcher
-			if (Const_isValidCredential) {
-				return { efiBankAlias: Const_efiBankAlias, pixKey: Const_pixKey, clientId: Const_clientId, clientSecret: Const_clientSecret, mtlsFetcher: Const_mtlsFetcher as Fetcher, baseUrl: Function_getEfiBankBaseUrl(Parameter_env) }
-			}
-
-			if (Parameter_efiBankAliasPreferred === Const_efiBankAlias) {
-				return { typ: 'logical', msg: 'Selected Efi alias is not fully configured', inf: { efiBankAlias: Const_efiBankAlias, hasPixKey: typeof Const_pixKey === 'string', hasClientId: typeof Const_clientId === 'string', hasClientSecret: typeof Const_clientSecret === 'string', hasMtlsFetcher: !!Const_mtlsFetcher }, loc: Function_getFuncionName(), err: true }
-			}
-		}
-
-		return { typ: 'logical', msg: 'No Efi account credentials are fully configured', inf: { Parameter_efiBankAliasPreferred }, loc: Function_getFuncionName(), err: true }
-	}
-
-	catch (Parameter_error) {
-		return { typ: 'catch', msg: 'Error resolving Efi account credentials', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
-	}
-}
-
-export async function Function_generateEfiBankAccessToken(Parameter_env: Env, Parameter_efiBankAliasPreferred?: Type_efiBankAlias): Type_errorOr<Promise<Type_efiBankAccessResolved>> {
-	try {
-		const Const_efiCredential = Function_getEfiBankCredentialResolved(Parameter_env, Parameter_efiBankAliasPreferred)
-		if (Function_isError(Const_efiCredential)) {
-			return Const_efiCredential
-		}
-
-		const Const_authBase64 = btoa(`${Const_efiCredential.clientId}:${Const_efiCredential.clientSecret}`)
-		const Const_response = await Const_efiCredential.mtlsFetcher.fetch(`${Const_efiCredential.baseUrl}/oauth/token`, {
-			method: 'POST',
-			headers: {
-				Authorization: `Basic ${Const_authBase64}`,
-				'Content-Type': 'application/json',
-				Accept: 'application/json',
-			},
-			body: JSON.stringify({ grant_type: 'client_credentials' }),
-		})
-		const Const_responseRaw = await Function_getResponseTextAndJson(Const_response)
-		if (!Const_response.ok) {
-			return { typ: 'logical', msg: 'Error generating Efi access token', inf: { efiBankAlias: Const_efiCredential.efiBankAlias, status: Const_response.status, responseBody: Const_responseRaw.text }, loc: Function_getFuncionName(), err: true }
-		}
-
-		const Const_responseJson = Const_responseRaw.json as Type_efiBankOauthTokenResponse | undefined
-		const Const_accessToken = Function_getTrimmedStringOrUndefined(Const_responseJson?.access_token)
-		if (typeof Const_accessToken !== 'string') {
-			return { typ: 'logical', msg: 'Efi access token was not returned', inf: { efiBankAlias: Const_efiCredential.efiBankAlias, responseBody: Const_responseRaw.text }, loc: Function_getFuncionName(), err: true }
-		}
-
-		return {
-			efiBankAlias: Const_efiCredential.efiBankAlias,
-			pixKey: Const_efiCredential.pixKey,
-			mtlsFetcher: Const_efiCredential.mtlsFetcher,
-			baseUrl: Const_efiCredential.baseUrl,
-			accessToken: Const_accessToken,
-			tokenType: Function_getTrimmedStringOrUndefined(Const_responseJson?.token_type) || 'Bearer',
-			expiresIn: typeof Const_responseJson?.expires_in === 'number' ? Const_responseJson.expires_in : 3600,
-			scope: Function_getTrimmedStringOrUndefined(Const_responseJson?.scope) || ''
-		}
-	}
-
-	catch (Parameter_error) {
-		return { typ: 'catch', msg: 'Error generating Efi access token', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
-	}
-}
-
-export function Function_getEfiWebhookUrlWithToken(Parameter_webhookUrlBase: string, Parameter_webhookToken: string): Type_errorOr<string> {
-	try {
-		const Const_webhookUrlBase = Function_getTrimmedStringOrUndefined(Parameter_webhookUrlBase)
-		const Const_webhookToken = Function_getTrimmedStringOrUndefined(Parameter_webhookToken)
-		if (typeof Const_webhookUrlBase !== 'string' || typeof Const_webhookToken !== 'string') {
-			return { typ: 'logical', msg: 'Invalid webhook URL base or token', inf: { Parameter_webhookUrlBase, hasWebhookToken: typeof Parameter_webhookToken === 'string' }, loc: Function_getFuncionName(), err: true }
-		}
-
-		const Const_webhookUrl = new URL(Const_webhookUrlBase)
-		Const_webhookUrl.searchParams.set('token', Const_webhookToken)
-		Const_webhookUrl.searchParams.set('ignorar', '')
-		return Const_webhookUrl.toString()
-	}
-
-	catch (Parameter_error) {
-		return { typ: 'catch', msg: 'Error building Efi webhook URL with token', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
-	}
-}
-
-export async function Function_putEfiBankWebhook(Parameter_efiAccess: Type_efiBankAccessResolved, Parameter_webhookUrl: string, Parameter_skipMtlsChecking: boolean = true): Type_errorOr<Promise<{ status: number; responseBody: string; }>> {
-	try {
-		const Const_webhookUrl = Function_getTrimmedStringOrUndefined(Parameter_webhookUrl)
-		if (typeof Const_webhookUrl !== 'string') {
-			return { typ: 'logical', msg: 'Invalid webhook URL to configure on Efi', inf: { Parameter_webhookUrl }, loc: Function_getFuncionName(), err: true }
-		}
-
-		const Const_header: Record<string, string> = {
-			Authorization: `${Parameter_efiAccess.tokenType} ${Parameter_efiAccess.accessToken}`,
-			'Content-Type': 'application/json',
-			Accept: 'application/json',
-		}
-		if (Parameter_skipMtlsChecking) {
-			Const_header['x-skip-mtls-checking'] = 'true'
-		}
-
-		const Const_response = await Parameter_efiAccess.mtlsFetcher.fetch(`${Parameter_efiAccess.baseUrl}/v2/webhook/${Parameter_efiAccess.pixKey}`, {
-			method: 'PUT',
-			headers: Const_header,
-			body: JSON.stringify({ webhookUrl: Const_webhookUrl })
-		})
-		const Const_responseRaw = await Function_getResponseTextAndJson(Const_response)
-		if (!Const_response.ok) {
-			return { typ: 'logical', msg: 'Error configuring Efi webhook', inf: { efiBankAlias: Parameter_efiAccess.efiBankAlias, status: Const_response.status, responseBody: Const_responseRaw.text }, loc: Function_getFuncionName(), err: true }
-		}
-
-		return { status: Const_response.status, responseBody: Const_responseRaw.text }
-	}
-
-	catch (Parameter_error) {
-		return { typ: 'catch', msg: 'Error configuring Efi webhook', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
-	}
-}
-
-export async function Function_getEfiBankWebhook(Parameter_efiAccess: Type_efiBankAccessResolved): Type_errorOr<Promise<{ status: number; responseBody: string; responseBodyJson?: unknown; }>> {
-	try {
-		const Const_response = await Parameter_efiAccess.mtlsFetcher.fetch(`${Parameter_efiAccess.baseUrl}/v2/webhook/${Parameter_efiAccess.pixKey}`, {
-			method: 'GET',
-			headers: {
-				Authorization: `${Parameter_efiAccess.tokenType} ${Parameter_efiAccess.accessToken}`,
-				Accept: 'application/json'
-			}
-		})
-		const Const_responseRaw = await Function_getResponseTextAndJson(Const_response)
-		if (!Const_response.ok) {
-			return { typ: 'logical', msg: 'Error fetching Efi webhook configuration', inf: { efiBankAlias: Parameter_efiAccess.efiBankAlias, status: Const_response.status, responseBody: Const_responseRaw.text }, loc: Function_getFuncionName(), err: true }
-		}
-
-		return { status: Const_response.status, responseBody: Const_responseRaw.text, responseBodyJson: Const_responseRaw.json }
-	}
-
-	catch (Parameter_error) {
-		return { typ: 'catch', msg: 'Error fetching Efi webhook configuration', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
-	}
-}
-
-export async function Function_getEfiBankCobByTxid(Parameter_efiAccess: Type_efiBankAccessResolved, Parameter_txid: string): Type_errorOr<Promise<Type_efiBankCobResponse>> {
-	try {
-		const Const_txid = Function_getTrimmedStringOrUndefined(Parameter_txid)
-		if (typeof Const_txid !== 'string' || !Function_isValidEfiBankTxid(Const_txid)) {
-			return { typ: 'logical', msg: 'Invalid txid to get Efi cob', inf: { Parameter_txid }, loc: Function_getFuncionName(), err: true }
-		}
-
-		const Const_response = await Parameter_efiAccess.mtlsFetcher.fetch(`${Parameter_efiAccess.baseUrl}/v2/cob/${Const_txid}`, {
-			method: 'GET',
-			headers: {
-				Authorization: `${Parameter_efiAccess.tokenType} ${Parameter_efiAccess.accessToken}`,
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-			}
-		})
-		const Const_responseRaw = await Function_getResponseTextAndJson(Const_response)
-		if (!Const_response.ok) {
-			return { typ: 'logical', msg: 'Error getting Efi cob by txid', inf: { efiBankAlias: Parameter_efiAccess.efiBankAlias, txid: Const_txid, status: Const_response.status, responseBody: Const_responseRaw.text }, loc: Function_getFuncionName(), err: true }
-		}
-
-		const Const_responseJson = Const_responseRaw.json as Type_efiBankCobResponse | undefined
-		if (!Const_responseJson || typeof Const_responseJson !== 'object') {
-			return { typ: 'logical', msg: 'Invalid Efi cob response body', inf: { efiBankAlias: Parameter_efiAccess.efiBankAlias, txid: Const_txid, responseBody: Const_responseRaw.text }, loc: Function_getFuncionName(), err: true }
-		}
-
-		return Const_responseJson
-	}
-
-	catch (Parameter_error) {
-		return { typ: 'catch', msg: 'Error getting Efi cob by txid', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
-	}
-}
-
-export async function Function_createEfiBankCobByTxid(
-	Parameter_efiAccess: Type_efiBankAccessResolved,
-	Parameter_txid: string,
-	Parameter_amountOriginal: string,
-	Parameter_solicitacaoPagador: string,
-	Parameter_expirationSeconds: number = 48 * 60 * 60
-): Type_errorOr<Promise<Type_efiBankCobResponse>> {
-	try {
-		const Const_txid = Function_getTrimmedStringOrUndefined(Parameter_txid)
-		const Const_amountOriginal = Function_getTrimmedStringOrUndefined(Parameter_amountOriginal)
-		const Const_solicitacaoPagador = Function_getTrimmedStringOrUndefined(Parameter_solicitacaoPagador)
-		if (typeof Const_txid !== 'string' || !Function_isValidEfiBankTxid(Const_txid)) {
-			return { typ: 'logical', msg: 'Invalid txid to create Efi cob', inf: { Parameter_txid }, loc: Function_getFuncionName(), err: true }
-		}
-		if (typeof Const_amountOriginal !== 'string') {
-			return { typ: 'logical', msg: 'Invalid amount to create Efi cob', inf: { Parameter_amountOriginal }, loc: Function_getFuncionName(), err: true }
-		}
-		if (typeof Const_solicitacaoPagador !== 'string') {
-			return { typ: 'logical', msg: 'Invalid description to create Efi cob', inf: { Parameter_solicitacaoPagador }, loc: Function_getFuncionName(), err: true }
-		}
-
-		const Const_response = await Parameter_efiAccess.mtlsFetcher.fetch(`${Parameter_efiAccess.baseUrl}/v2/cob/${Const_txid}`, {
-			method: 'PUT',
-			headers: {
-				Authorization: `${Parameter_efiAccess.tokenType} ${Parameter_efiAccess.accessToken}`,
-				'Content-Type': 'application/json',
-				Accept: 'application/json',
-			},
-			body: JSON.stringify({
-				calendario: {
-					expiracao: Parameter_expirationSeconds
-				},
-				valor: {
-					original: Const_amountOriginal
-				},
-				chave: Parameter_efiAccess.pixKey,
-				solicitacaoPagador: Const_solicitacaoPagador.slice(0, 140),
-			})
-		})
-		const Const_responseRaw = await Function_getResponseTextAndJson(Const_response)
-		if (Const_response.ok) {
-			const Const_responseJson = Const_responseRaw.json as Type_efiBankCobResponse | undefined
-			if (!Const_responseJson || typeof Const_responseJson !== 'object') {
-				return { typ: 'logical', msg: 'Invalid Efi cob create success response body', inf: { efiBankAlias: Parameter_efiAccess.efiBankAlias, txid: Const_txid, responseBody: Const_responseRaw.text }, loc: Function_getFuncionName(), err: true }
-			}
-
-			return Const_responseJson
-		}
-
-		const Const_errorJson = Const_responseRaw.json as Type_efiBankCobResponse | undefined
-		const Const_isDuplicatedTxid = Const_response.status === 409 && Const_errorJson?.nome === 'txid_duplicado'
-		if (Const_isDuplicatedTxid) {
-			const Const_existingCob = await Function_getEfiBankCobByTxid(Parameter_efiAccess, Const_txid)
-			if (Function_isError(Const_existingCob)) {
-				return Const_existingCob
-			}
-
-			return Const_existingCob
-		}
-
-		return { typ: 'logical', msg: 'Error creating Efi cob by txid', inf: { efiBankAlias: Parameter_efiAccess.efiBankAlias, txid: Const_txid, status: Const_response.status, responseBody: Const_responseRaw.text }, loc: Function_getFuncionName(), err: true }
-	}
-
-	catch (Parameter_error) {
-		return { typ: 'catch', msg: 'Error creating Efi cob by txid', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
-	}
-}
-
 
 export async function Function_getD1<
 	ParameterType_table extends Type_orNameTableD1,
@@ -1298,5 +950,145 @@ export async function Function_getContentByCollegeCourseClass(
 
 	catch (Parameter_error) {
 		return { typ: 'catch', msg: 'Error getting content by college/course/class', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
+	}
+}
+
+export async function Function_generateAcessTokenEfi(Parameter_env: Env): Type_errorOr<Promise<string>> {
+	try {
+		// Credenciais (Recomendado usar Secrets: env.CLIENT_ID)
+		const Const_clientId = Parameter_env.EnvSecret_keyClientIdEfiBankRC;
+		const Const_clientSecret = Parameter_env.EnvSecret_keyClientSecretEfiBankRC;
+
+		// IMPORTANTE: Chamamos .fetch() do BINDING (MtlsCertificates_efiBankRC), não o global
+		const Const_postTokenFetch = await Parameter_env.MtlsCertificates_efiBankRC?.fetch(`https://pix.api.efipay.com.br/oauth/token`, {
+			method: "POST",
+			headers: {
+				"Authorization": `Basic ${btoa(`${Const_clientId}:${Const_clientSecret}`)}`,
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({ grant_type: "client_credentials" })
+		})
+
+		if (!Const_postTokenFetch?.ok) {
+			const Const_postTokenText = await Const_postTokenFetch?.text()
+			console.log(`[ERROR] [Token fetch retornou status !ok] [Function_generateAcessTokenEfi] [Status]: ${Const_postTokenFetch?.status} Response text:`, Const_postTokenText)
+			return { typ: 'logical', msg: 'Error fetching Efi access token', inf: { status: Const_postTokenFetch?.status, responseText: Const_postTokenText }, loc: Function_getFuncionName(), err: true }
+		}
+
+		const Const_postTokenJson = await Const_postTokenFetch.json() as { access_token: string }
+		const Const_accessTokenJson = Const_postTokenJson.access_token
+
+		return Const_accessTokenJson
+	}
+
+	catch (Parameter_error) {
+		console.log("[CATCH] [Erro catch] [Function_generateAcessTokenEfi] Error generating Efi access token:", Parameter_error)
+		return { typ: 'catch', msg: 'Error generating Efi access token', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
+	}
+}
+
+export async function Function_generateCreatePaymentPixEfi(Parameter_env: Env, Parameter_accessToken: string, Parameter_price: string, Parameter_txid: string, Parameter_name: string): Type_errorOr<Promise<{ pixCopiaECola: string }>> {
+	try {
+		// 1. Defina um txid (String alfanumérica de 26 a 35 caracteres)
+		// Exemplo: "IDpedido12345678901234567890" (deve ser único)
+
+		// 4. Execução da requisição usando o mTLS (env.MtlsCertificates_efiBankRC)
+		const Const_putCobFetch = await Parameter_env.MtlsCertificates_efiBankRC?.fetch(`https://pix.api.efipay.com.br/v2/cob/${Parameter_txid}`, {
+			method: "PUT", // Para /v2/cob/:txid o método é PUT
+			headers: {
+				"Authorization": `Bearer ${Parameter_accessToken}`, // Use o token do passo anterior
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				calendario: {
+					expiracao: 48 * 60 * 60 // tempo em segundos (48 horas)
+				},
+				/* devedor: {
+					cpf: "12345678909",
+					nome: "Nome do Cliente"
+				}, */
+				valor: {
+					original: Parameter_price // Valor deve ser string com ponto decimal
+				},
+				chave: Parameter_env.EnvSecret_keyPixRC, // Chave cadastrada na Efí
+				solicitacaoPagador: `Conteúdo de estudo - ${Parameter_name}`
+			})
+		})
+
+		const Const_putCobJson = await Const_putCobFetch?.json() as { pixCopiaECola: string, location: string, nome?: string }
+
+		console.log(`[INF] [Resultado put cob fetch] [Function_generateCreatePaymentPix] Const_v2CobJson:`, Const_putCobJson)
+
+		if (!Const_putCobFetch?.ok) {
+			if (Const_putCobJson.nome === 'txid_duplicado') {
+				// nova request
+				const Const_getCobFetch = await Parameter_env.MtlsCertificates_efiBankRC?.fetch(`https://pix.api.efipay.com.br/v2/cob/${Parameter_txid}`, {
+					method: "GET", // Para /v2/cob/:txid o método é GET
+					headers: {
+						"Authorization": `Bearer ${Parameter_accessToken}`, // Use o token do passo anterior
+						"Content-Type": "application/json"
+					}
+				})
+
+				const Const_getCobJson = await Const_getCobFetch?.json() as { pixCopiaECola: string, location: string };
+
+				if (!Const_getCobFetch?.ok) {
+					console.log(`[ERROR] [get cob fetch retornou status !ok] [Function_generateCreatePaymentPix] [Status]: ${Const_getCobFetch?.status} Const_getCobJson:`, Const_getCobJson)
+					return { typ: 'logical', msg: 'Error fetching existing Efi PIX charge after duplicate txid error', inf: { status: Const_getCobFetch?.status, responseJson: Const_getCobJson }, loc: Function_getFuncionName(), err: true }
+				}
+
+				return { pixCopiaECola: Const_getCobJson.pixCopiaECola }
+			}
+		}
+
+		if (!Const_putCobJson?.pixCopiaECola) {
+			console.log(`[ERROR] [put cob fetch não retornou pixCopiaECola] [Function_generateCreatePaymentPix] [Status]: ${Const_putCobFetch?.status} Const_putCobJson:`, Const_putCobJson)
+			return { typ: 'logical', msg: 'Error creating Efi PIX charge, pixCopiaECola not returned', inf: { status: Const_putCobFetch?.status, responseJson: Const_putCobJson }, loc: Function_getFuncionName(), err: true }
+		}
+
+		return { pixCopiaECola: Const_putCobJson.pixCopiaECola }
+	}
+
+	catch (Parameter_error) {
+		console.log("[CATCH] [Erro catch] [Function_generateCreatePaymentPix] Error generating PIX charge:", Parameter_error)
+		return { typ: 'catch', msg: 'Error generating Efi PIX charge', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
+	}
+}
+
+export async function Function_configWebhookEfi(Parameter_env: Env, Parameter_accessToken: string, urlWebhook: string): Type_errorOr<Promise<boolean>> {
+	try {
+        // 1. Crie uma chave secreta para sua segurança (já que o mTLS estará desligado)
+        // Você pode salvar isso no seu wrangler.toml como uma Secret
+
+        // 2. Monte a URL com o token e o parâmetro 'ignorar=' no final
+        // Isso evita que a Efí adicione "/pix" e garante que só a Efí chame seu Worker
+
+		const Const_finalUrlWebhook = `${urlWebhook}?hmac=${Parameter_env.EnvSecret_tokenWebhookEfiBank}&ignorar=`
+
+		const Const_putWebhookFetch = await Parameter_env.MtlsCertificates_efiBankRC?.fetch(`https://pix.api.efipay.com.br/v2/webhook/${Parameter_env.EnvSecret_keyPixRC}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `Bearer ${Parameter_accessToken}`,
+                    "Content-Type": "application/json",
+                    "x-skip-mtls-checking": "true"
+                },
+                body: JSON.stringify({
+                    webhookUrl: Const_finalUrlWebhook
+                })
+            }
+        )
+
+		if (!Const_putWebhookFetch?.ok) {
+			const Const_putWebhookText = await Const_putWebhookFetch?.text()
+			console.log(`[ERROR] [Webhook config fetch retornou status !ok] [Function_configWebhookEfi] [Status]: ${Const_putWebhookFetch?.status} Response text:`, Const_putWebhookText)
+			return { typ: 'logical', msg: 'Error configuring Efi webhook, response status not ok', inf: { status: Const_putWebhookFetch?.status, responseText: Const_putWebhookText }, loc: Function_getFuncionName(), err: true }
+		}
+
+		return true
+	}
+
+	catch (Parameter_error) {
+		console.log("[CATCH] [Erro catch] [Function_configWebhookEfi] Error configuring Efi webhook:", Parameter_error)
+		return { typ: 'catch', msg: 'Error configuring Efi webhook', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
 	}
 }

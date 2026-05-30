@@ -134,36 +134,32 @@ END;
 -- CREATE INDEX index_student_uuid_seller_sale_history ON sale_history (student_uuid_seller_sale_history);
 
 
-CREATE TABLE pix_payment
+CREATE TABLE order
 (
-	pix_payment_id											integer primary key autoincrement,
-	pix_payment_uuid										text not null unique,
-	pix_payment_created										timestamp default current_timestamp not null,
-	pix_payment_update										timestamp default current_timestamp not null,
+	order_id											integer primary key autoincrement,
+	order_uuid											text not null unique,
+	order_created										timestamp default current_timestamp not null,
+	order_update										timestamp default current_timestamp not null,
 
-	txid_pix_payment										text not null unique, -- txid da cobranca na Efi (regex: ^[a-zA-Z0-9]{26,35}$)
+	student_uuid_buyer_order							text not null, -- UUID do aluno comprador
+	content_uuid_array_order							text not null, -- JSON string com array de content_uuid com intenção de compra
 
-	student_uuid_buyer_pix_payment							text not null, -- UUID do aluno comprador
-	content_uuid_array_pix_payment							text not null, -- JSON string com array de content_uuid comprados
+	total_amount_order									real not null, -- valor total da cobranca
 
-	total_amount_pix_payment								real not null, -- valor total da cobranca
+	status_order										text, -- waiting | completed
 
-	status_pix_payment										text not null, -- waiting_payment | completed | failed
-	efi_bank_alias_pix_payment								text not null, -- gp | rp | rc
-
-	e2e_id_pix_payment										text, -- EndToEndId recebido no webhook
-	webhook_payload_pix_payment								text -- JSON bruto recebido no webhook
+	webhook_payload_order								text -- JSON bruto recebido no webhook
 );
 
-CREATE TRIGGER trigger_update_pix_payment AFTER UPDATE ON pix_payment
+CREATE TRIGGER trigger_update_order AFTER UPDATE ON order
 BEGIN
-	UPDATE pix_payment SET pix_payment_update = CURRENT_TIMESTAMP WHERE pix_payment_id = NEW.pix_payment_id;
+	UPDATE order SET order_update = CURRENT_TIMESTAMP WHERE order_id = NEW.order_id;
 END;
 
 -- [ EDITE PARA O MAIS OTIMIZADO POSSIVEL EM FUNÃ‡Ã‚O DE QUAIS SERÃƒO AS CONSULTAS ]
--- CREATE INDEX index_txid_pix_payment ON pix_payment (txid_pix_payment);
+-- CREATE INDEX index_txid_order ON order (txid_order);
 -- [ EDITE PARA O MAIS OTIMIZADO POSSIVEL EM FUNÃ‡Ã‚O DE QUAIS SERÃƒO AS CONSULTAS ]
--- CREATE INDEX index_student_uuid_buyer_pix_payment ON pix_payment (student_uuid_buyer_pix_payment);
+-- CREATE INDEX index_student_uuid_buyer_order ON order (student_uuid_buyer_order);
 
 
 CREATE TABLE denuncia

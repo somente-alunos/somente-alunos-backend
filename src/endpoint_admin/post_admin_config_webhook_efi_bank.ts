@@ -1,23 +1,13 @@
-import { Function_generateEfiBankAccessToken, Function_getAdminAuthenticated, Function_getEfiBankAliasOrUndefined, Function_getEfiBankWebhook, Function_getEfiWebhookToken, Function_getEfiWebhookUrlWithToken, Function_getFuncionName, Function_getResponseError, Function_getTrimmedStringOrUndefined, Function_isError, Function_putEfiBankWebhook } from "../function_global"
+import { Function_configWebhookEfi, Function_generateAcessTokenEfi, Function_generateCreatePaymentPixEfi, Function_getAdminAuthenticated, Function_getFuncionName, Function_getResponseError, Function_getTrimmedStringOrUndefined, Function_isError } from "../function_global"
 
 
 type Type_PostAdminConfigWebhookEfiBankBody = {
-	efiBankAlias?: Type_efiBankAlias;
-	webhookUrlBase?: string;
-	skipMtlsChecking?: boolean;
+	webhookUrlBase: string;
 }
 
 type Type_PostAdminConfigWebhookEfiBankResponse = {
 	success: true;
-	efiBankAlias: Type_efiBankAlias;
-	pixKey: string;
-	webhookUrlRegistered: string;
-	skipMtlsChecking: boolean;
-	setWebhookStatus: number;
-	setWebhookResponseBody: string;
-	getWebhookStatus: number;
-	getWebhookResponseBody: string;
-	getWebhookResponseBodyJson?: unknown;
+    pixCopiaECola: string;
 }
 
 
@@ -32,76 +22,42 @@ export class Class_PostAdminConfigWebhookEfiBank {
 			// /\ Autentica admin pelo JWT
 
 			// \/ Le body JSON opcional
-			let Const_bodyUnknown: unknown = {}
-			try {
-				const Const_bodyText = await Parameter_request.text()
-				if (Const_bodyText.trim().length > 0) {
-					Const_bodyUnknown = JSON.parse(Const_bodyText)
-				}
-			}
-
-			catch (Parameter_error) {
-				return Function_getResponseError({ typ: 'catch', msg: 'Invalid JSON body', inf: Parameter_error, loc: Function_getFuncionName(), err: true }, 452, 'Invalid JSON body')
-			}
-
-			if (typeof Const_bodyUnknown !== 'object' || Const_bodyUnknown === null) {
-				return Function_getResponseError({ typ: 'logical', msg: 'Body must be a valid object', inf: { Const_bodyUnknown }, loc: Function_getFuncionName(), err: true }, 453, 'Body must be object')
-			}
-
-			const Const_body = Const_bodyUnknown as Partial<Type_PostAdminConfigWebhookEfiBankBody>
-			const Const_efiBankAlias = Function_getEfiBankAliasOrUndefined(Const_body.efiBankAlias)
-			const Const_skipMtlsChecking = typeof Const_body.skipMtlsChecking === 'boolean' ? Const_body.skipMtlsChecking : true
-			if (Object.prototype.hasOwnProperty.call(Const_body, 'efiBankAlias') && !Const_efiBankAlias) {
-				return Function_getResponseError({ typ: 'logical', msg: 'efiBankAlias must be gp, rp or rc when provided', inf: { efiBankAlias: Const_body.efiBankAlias }, loc: Function_getFuncionName(), err: true }, 454, 'Invalid efiBankAlias')
+			const Const_body = await Parameter_request.json() as Type_PostAdminConfigWebhookEfiBankBody
+			const Const_webhookUrlBaseBody = Const_body.webhookUrlBase
+			if (typeof Const_webhookUrlBaseBody !== 'string') {
+				return Function_getResponseError({ typ: 'logical', msg: 'webhookUrlBase must be a string', inf: { webhookUrlBase: Const_body.webhookUrlBase }, loc: Function_getFuncionName(), err: true }, 452, 'Invalid webhookUrlBase')
 			}
 			// /\ Le body JSON opcional
 
-			// \/ Resolve URL final do webhook
-			const Const_webhookToken = Function_getEfiWebhookToken(Parameter_env)
-			if (Function_isError(Const_webhookToken)) {
-				return Function_getResponseError(Const_webhookToken, 455, 'Invalid Efi webhook token')
+			// \/ Gera token efi
+			const Const_generateAcessTokenEfi = await Function_generateAcessTokenEfi(Parameter_env)
+			if (Function_isError(Const_generateAcessTokenEfi)) {
+				return Function_getResponseError(Const_generateAcessTokenEfi, 453, 'Error generating Efi access token for webhook configuration')
+			}
+			// /\ Gera token efi
+
+			// \/ Configura webhook na Efi
+			const Const_configWebhookEfi = await Function_configWebhookEfi(Parameter_env, Const_generateAcessTokenEfi, Const_webhookUrlBaseBody)
+			if (Function_isError(Const_configWebhookEfi)) {
+				return Function_getResponseError(Const_configWebhookEfi, 454, 'Error configuring Efi webhook')
+			}
+			// /\ Configura webhook na Efi
+
+			// \/ Testa gerando cobraça de PIX
+			const Const_generateCreatePaymentPixEfi = await Function_generateCreatePaymentPixEfi(Parameter_env, Const_generateAcessTokenEfi, '1.00', crypto.randomUUID().replaceAll('-', ''), 'Teste de configuração de webhook - Somente Alunos')
+			if (Function_isError(Const_generateCreatePaymentPixEfi)) {
+				return Function_getResponseError(Const_generateCreatePaymentPixEfi, 455, 'Error generating Efi PIX charge to test webhook configuration')
 			}
 
-			let Let_webhookUrlBase = Function_getTrimmedStringOrUndefined(Const_body.webhookUrlBase)
-			if (typeof Let_webhookUrlBase !== 'string') {
-				const Const_requestUrl = new URL(Parameter_request.url)
-				Let_webhookUrlBase = `${Const_requestUrl.origin}/post/efi-bank/webhook`
+			const Const_pixCopiaECola = Const_generateCreatePaymentPixEfi.pixCopiaECola
+			if (typeof Const_pixCopiaECola !== 'string') {
+				return Function_getResponseError({ typ: 'logical', msg: 'Invalid pixCopiaECola returned from Efi when testing webhook configuration', inf: { pixCopiaECola: Const_pixCopiaECola }, loc: Function_getFuncionName(), err: true }, 456, 'Invalid pixCopiaECola returned from Efi when testing webhook configuration')
 			}
-
-			const Const_webhookUrlRegistered = Function_getEfiWebhookUrlWithToken(Let_webhookUrlBase, Const_webhookToken)
-			if (Function_isError(Const_webhookUrlRegistered)) {
-				return Function_getResponseError(Const_webhookUrlRegistered, 456, 'Invalid webhook URL')
-			}
-			// /\ Resolve URL final do webhook
-
-			// \/ Gera access token da Efi e configura webhook
-			const Const_efiAccess = await Function_generateEfiBankAccessToken(Parameter_env, Const_efiBankAlias)
-			if (Function_isError(Const_efiAccess)) {
-				return Function_getResponseError(Const_efiAccess, 457, 'Error generating Efi access token')
-			}
-
-			const Const_setWebhookResult = await Function_putEfiBankWebhook(Const_efiAccess, Const_webhookUrlRegistered, Const_skipMtlsChecking)
-			if (Function_isError(Const_setWebhookResult)) {
-				return Function_getResponseError(Const_setWebhookResult, 458, 'Error setting Efi webhook')
-			}
-
-			const Const_getWebhookResult = await Function_getEfiBankWebhook(Const_efiAccess)
-			if (Function_isError(Const_getWebhookResult)) {
-				return Function_getResponseError(Const_getWebhookResult, 459, 'Error fetching configured Efi webhook')
-			}
-			// /\ Gera access token da Efi e configura webhook
+			// /\ Testa gerando cobraça de PIX
 
 			const Const_responseBody: Type_PostAdminConfigWebhookEfiBankResponse = {
 				success: true,
-				efiBankAlias: Const_efiAccess.efiBankAlias,
-				pixKey: Const_efiAccess.pixKey,
-				webhookUrlRegistered: Const_webhookUrlRegistered,
-				skipMtlsChecking: Const_skipMtlsChecking,
-				setWebhookStatus: Const_setWebhookResult.status,
-				setWebhookResponseBody: Const_setWebhookResult.responseBody,
-				getWebhookStatus: Const_getWebhookResult.status,
-				getWebhookResponseBody: Const_getWebhookResult.responseBody,
-				getWebhookResponseBodyJson: Const_getWebhookResult.responseBodyJson
+				pixCopiaECola: Const_pixCopiaECola
 			}
 
 			return new Response(JSON.stringify(Const_responseBody), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } })

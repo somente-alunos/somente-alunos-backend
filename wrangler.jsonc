@@ -225,7 +225,7 @@
 			],
 
 			// Mtls Certificates Local
-			/* "mtls_certificates":[
+			"mtls_certificates":[
 				{
 				"binding": "MtlsCertificates_efiBankGP",
 				"certificate_id": "b3812965-73a2-46b2-a9b2-729cc13ca66f",
@@ -241,7 +241,7 @@
 				"certificate_id": "cbd1aa0d-a2cf-4f03-aca4-360cfeb6725e",
 				"remote": true
 				}
-			], */
+			],
 
 			// Var Local
 			"vars": {
