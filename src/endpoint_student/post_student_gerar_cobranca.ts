@@ -1,17 +1,19 @@
 import { Function_getD1, Function_getFuncionName, Function_getResponseError, Function_getStudentAuthenticated, Function_isError, Function_postD1, Function_generateAcessTokenEfi, Function_generateCreatePaymentPixEfi } from "../function_global"
 
 
-type Type_PostStudentGerarPagamentoPixBody = {
+type Type_PostStudentGerarCobrancaBody = {
+	method: 'pix' | 'card_credit';
 	contentUuidArray: Array<Type_tableD1ContentGet['content_uuid']>;
 }
 
-type Type_PostStudentGerarPagamentoPixResponse = {
-    pixCopiaECola: string;
+type Type_PostStudentGerarCobrancaResponse = {
+    pixCopiaECola?: string;
+	payment_url?: string;
 	contentUuidArray: Array<Type_tableD1ContentGet['content_uuid']>;
 }
 
 
-export class Class_PostStudentGerarPagamentoPix {
+export class Class_PostStudentGerarCobranca {
 	public static async main(Parameter_request: Request, Parameter_env: Env, Parameter_context: ExecutionContext): Promise<Response> {
 		try {
 			// \/ Autentica aluno pelo JWT
@@ -22,11 +24,16 @@ export class Class_PostStudentGerarPagamentoPix {
 			// /\ Autentica aluno pelo JWT
 
 			// \/ Le body e valida entrada obrigatoria
-			const Const_body = await Parameter_request.json() as Type_PostStudentGerarPagamentoPixBody
+			const Const_body = await Parameter_request.json() as Type_PostStudentGerarCobrancaBody
 
 			const Const_contentUuidArrayBody = Const_body.contentUuidArray
 			if (!Array.isArray(Const_contentUuidArrayBody) || Const_contentUuidArrayBody.some(Parameter_item => typeof Parameter_item !== 'string')) {
 				return Function_getResponseError({ typ: 'logical', msg: 'contentUuidArray must be an array of strings', inf: { contentUuidArray: Const_body.contentUuidArray }, loc: Function_getFuncionName(), err: true }, 452, 'Invalid contentUuidArray')
+			}
+
+			const Const_methodBody = Const_body.method
+			if (Const_methodBody !== 'pix' && Const_methodBody !== 'card_credit') {
+				return Function_getResponseError({ typ: 'logical', msg: 'Invalid payment method', inf: { method: Const_methodBody }, loc: Function_getFuncionName(), err: true }, 453, 'Invalid payment method')
 			}
 			// /\ Le body e valida entrada obrigatoria
 
@@ -69,6 +76,7 @@ export class Class_PostStudentGerarPagamentoPix {
 				content_uuid_array_order: Const_contentUuidArrayBodyString,
 
 				total_amount_order: Number(Let_totalAmount.toFixed(2)),
+				method_order: Const_methodBody,
 
 				status_order: 'waiting'
 			}, ['*'])
@@ -78,26 +86,53 @@ export class Class_PostStudentGerarPagamentoPix {
 			// /\ Cria order para a cobranca
 
 			// \/ Cria cobranca na Efi
-			const Const_generateAcessTokenEfi = await Function_generateAcessTokenEfi(Parameter_env)
-			if (Function_isError(Const_generateAcessTokenEfi)) {
-				return Function_getResponseError(Const_generateAcessTokenEfi, 465, 'Error generating Efi access token for PIX charge')
+			if (Const_methodBody === 'pix') {
+				// \/ Cria cobranca PIX
+				const Const_generateAcessTokenEfi = await Function_generateAcessTokenEfi(Parameter_env)
+				if (Function_isError(Const_generateAcessTokenEfi)) {
+					return Function_getResponseError(Const_generateAcessTokenEfi, 465, 'Error generating Efi access token for PIX charge')
+				}
+
+				const Const_price = Let_totalAmount.toFixed(2)
+				const Const_orderUuidWithoutDashe = Const_orderUuid.replaceAll('-', '')
+				const Const_name = `Conteúdo de estudo - Somente Alunos`
+				const Const_generateCreatePaymentPixEfi = await Function_generateCreatePaymentPixEfi(Parameter_env, Const_generateAcessTokenEfi, Const_price, Const_orderUuidWithoutDashe, Const_name)
+				if (Function_isError(Const_generateCreatePaymentPixEfi)) {
+					return Function_getResponseError(Const_generateCreatePaymentPixEfi, 466, 'Error generating Efi PIX charge')
+				}
+
+				if (typeof Const_generateCreatePaymentPixEfi.pixCopiaECola !== 'string' || Const_generateCreatePaymentPixEfi.pixCopiaECola.trim().length === 0) {
+					return Function_getResponseError({ typ: 'logical', msg: 'Invalid pixCopiaECola returned from Efi', inf: { pixCopiaECola: Const_generateCreatePaymentPixEfi.pixCopiaECola }, loc: Function_getFuncionName(), err: true }, 467, 'Invalid pixCopiaECola returned from Efi')
+				}
+
+				const Const_responseBody: Type_PostStudentGerarCobrancaResponse = {
+					pixCopiaECola: Const_generateCreatePaymentPixEfi.pixCopiaECola,
+					contentUuidArray: Const_contentUuidArrayBody
+				}
+
+				return new Response(JSON.stringify(Const_responseBody), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } })
+				// /\ Cria cobranca PIX
 			}
 
-			const Const_price = Let_totalAmount.toFixed(2)
-			const Const_orderUuidWithoutDashe = Const_orderUuid.replaceAll('-', '')
-			const Const_name = `Conteúdo de estudo - Somente Alunos`
-			const Const_generateCreatePaymentPixEfi = await Function_generateCreatePaymentPixEfi(Parameter_env, Const_generateAcessTokenEfi, Const_price, Const_orderUuidWithoutDashe, Const_name)
-			if (Function_isError(Const_generateCreatePaymentPixEfi)) {
-				return Function_getResponseError(Const_generateCreatePaymentPixEfi, 466, 'Error generating Efi PIX charge')
+			else if (Const_methodBody === 'card_credit') {
+				// \/ Cria cobranca PIX
+				const Const_generateAcessTokenEfi = await Function_generateAcessTokenEfi(Parameter_env)
+				if (Function_isError(Const_generateAcessTokenEfi)) {
+					return Function_getResponseError(Const_generateAcessTokenEfi, 465, 'Error generating Efi access token for card credit charge')
+				}
+
+				// # Resto da logica
+
+				const Const_responseBody: Type_PostStudentGerarCobrancaResponse = {
+					payment_url: '',
+					contentUuidArray: Const_contentUuidArrayBody
+				}
+
+				return new Response(JSON.stringify(Const_responseBody), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } })
 			}
 			// /\ Cria cobranca na Efi
 
-			const Const_responseBody: Type_PostStudentGerarPagamentoPixResponse = {
-				pixCopiaECola: Const_generateCreatePaymentPixEfi.pixCopiaECola,
-				contentUuidArray: Const_contentUuidArrayBody
-			}
-
-			return new Response(JSON.stringify(Const_responseBody), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } })
+			return Function_getResponseError({ typ: 'logical', msg: 'Unsupported payment method', inf: { method: Const_methodBody }, loc: Function_getFuncionName(), err: true }, 468, 'Unsupported payment method')
 		}
 
 		catch (Parameter_error) {

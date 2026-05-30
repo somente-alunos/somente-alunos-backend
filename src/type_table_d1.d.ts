@@ -90,6 +90,7 @@ type Type_tableD1OrderGet = {
 	content_uuid_array_order: string; // JSON parse Array<content_uuid>
 
 	total_amount_order: number;
+	method_order: string; // pix | card_credit
 
 	status_order: string;
 
@@ -199,6 +200,7 @@ type Type_tableD1OrderPost = {
 	content_uuid_array_order: Type_tableD1OrderGet['content_uuid_array_order'];
 
 	total_amount_order: Type_tableD1OrderGet['total_amount_order'];
+	method_order: Type_tableD1OrderGet['method_order'];
 
 	status_order: Type_tableD1OrderGet['status_order'];
 

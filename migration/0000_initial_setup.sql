@@ -145,6 +145,7 @@ CREATE TABLE order
 	content_uuid_array_order							text not null, -- JSON string com array de content_uuid com intenção de compra
 
 	total_amount_order									real not null, -- valor total da cobranca
+	method_order										text not null, -- pix | card_credit
 
 	status_order										text, -- waiting | completed
 

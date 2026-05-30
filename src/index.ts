@@ -8,7 +8,7 @@ import { Class_GetStudentCarrinho } from "./endpoint_student/get_student_carrinh
 import { Class_PatchStudentCarrinho } from "./endpoint_student/patch_student_carrinho"
 import { Class_PostAdminConfigWebhookEfiBank } from "./endpoint_admin/post_admin_config_webhook_efi_bank"
 import { Class_GetAdminConfigWebhookEfiBank } from "./endpoint_admin/get_admin_config_webhook_efi_bank"
-import { Class_PostStudentGerarPagamentoPix } from "./endpoint_student/post_student_gerar_pagamento_pix"
+import { Class_PostStudentGerarCobranca } from "./endpoint_student/post_student_gerar_cobranca"
 import { Class_PostEfiBankWebhook } from "./endpoin_efi_bank/post_efi_bank_webhook"
 import { Class_GetStudentOrAdminFaculdadeTodas } from "./endpoint_student/get_student_or_admin_faculdade_todas"
 import { Class_GetStudentPostado } from "./endpoint_student/get_student_postado"
@@ -150,9 +150,9 @@ async function Function_handleRequest(Parameter_request: Request, Parameter_env:
 		return await Class_GetAdminConfigWebhookEfiBank.main(Parameter_request, Parameter_env, Parameter_context)
 	}
 
-	// POST /post/student/gerar-pagamento-pix
-	else if (Const_pathName === '/post/student/gerar-pagamento-pix' && Const_method === 'POST') {
-		return await Class_PostStudentGerarPagamentoPix.main(Parameter_request, Parameter_env, Parameter_context)
+	// POST /post/student/gerar-cobranca
+	else if (Const_pathName === '/post/student/gerar-cobranca' && Const_method === 'POST') {
+		return await Class_PostStudentGerarCobranca.main(Parameter_request, Parameter_env, Parameter_context)
 	}
 
 	// POST /post/efi-bank/webhook
