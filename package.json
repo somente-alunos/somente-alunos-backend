@@ -1,0 +1,26 @@
+{
+  "name": "somente-alunos-backend",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy --env=production",
+    "dev": "wrangler dev --env=local --port=8789 --persist-to=%USERPROFILE%/database-local/.wrangler/state",
+    "start": "wrangler dev --env=local",
+    "test": "vitest",
+    "type": "node generate_env_secret.js --file=env_secret.jsonc,EXAMPLE_env_secret.jsonc --env=production,dev,local && wrangler types",
+    "tunnel": "%CD%/tunnel_local/cloudflared.exe tunnel --origincert=%USERPROFILE%\\.cloudflared\\credencial_somentealunos.vip\\cert.pem --url http://127.0.0.1:8789 run localapi_somentealunos_v1",
+    "log-production": "npx wrangler tail somente-alunos-backend",
+    "log-dev": "npx wrangler tail somente-alunos-backend",
+    "set-pre-push": "node -e \"const fs = require('fs'); fs.copyFileSync('pre-push', '.git/hooks/pre-push'); try { fs.chmodSync('.git/hooks/pre-push', 0o755); } catch (e) {} console.log('Hook pre-push configurado com sucesso!');\""
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.12.4",
+    "@types/node": "^25.6.0",
+    "typescript": "^5.5.2",
+    "vitest": "~3.2.0"
+  },
+  "dependencies": {
+    "@tsndr/cloudflare-worker-jwt": "^3.2.1",
+    "wrangler": "^4.95.0"
+  }
+}

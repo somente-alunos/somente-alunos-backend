@@ -1,0 +1,310 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-04-16",
+	"observability": {
+		"enabled": true,
+	},
+	"upload_source_maps": true,
+	"compatibility_flags": ["nodejs_compat"],
+
+	"env": {
+		// # # # # # # # # # # # # # # # # # # # #
+		// Env Production
+		"production": {
+			// Name Production
+			"name": "somente-alunos-backend",
+
+			// Routes Production
+			"routes": [
+				{
+					"pattern": "api.somentealunos.vip",
+					"custom_domain": true,
+				},
+			],
+
+			// D1 Production
+			"d1_databases": [
+				{
+					"binding": "D1_somenteAlunosAll2",
+					"database_name": "d1_somente_alunos_all_2-production",
+					"database_id": "6158fe23-a31e-462a-ac58-70415ae0909d",
+					"preview_database_id": "55bf0f16-bf4d-46ae-98cc-cfe66d98f394",
+				},
+			],
+
+			// R2 Production
+			"r2_buckets": [
+				{
+					"binding": "R2_somenteAlunosAll2",
+					"bucket_name": "somente-alunos-all-2-production",
+					"preview_bucket_name": "somente-alunos-all-2-dev",
+				},
+			],
+
+			// KV Production
+			"kv_namespaces": [
+				{
+					"binding": "KV_somenteAlunosAll2",
+					"id": "1c77f310ea85444185d89ef80374dc26",
+				},
+			],
+
+			// Mtls Certificates Production
+			"mtls_certificates": [
+				{
+					"binding": "MtlsCertificates_efiBankGP",
+					"certificate_id": "b3812965-73a2-46b2-a9b2-729cc13ca66f",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRP",
+					"certificate_id": "bda6ec26-9536-4eb6-980c-2140cf781258",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRC",
+					"certificate_id": "cbd1aa0d-a2cf-4f03-aca4-360cfeb6725e",
+					"remote": true,
+				},
+			],
+
+			// Var Production
+			"vars": {
+				"Env_originFrontend": "https://somentealunos.vip",
+				"Env_hostnameFrontend": "somentealunos.vip",
+				"Env_cookiePrefix": "production",
+				"Env_environment": "production",
+				"Env_webhookUrlBase": "https://api.somentealunos.vip/post/efi-bank/webhook",
+
+				// Variables Secrets (They can be set here or in a .env.production file)
+				/* "EnvSecret_verifyStudentCpfOrRa": true,
+
+				"EnvSecret_verifyStudentEndpoint1": "https://example-external-api-to-verify-student-document.com/verify_1",
+				"EnvSecret_verifyStudentEndpoint2": "https://example-external-api-to-verify-student-document.com/verify_2",
+				"EnvSecret_verifyStudentEndpoint3": "https://example-external-api-to-verify-student-document.com/verify_3",
+
+				"EnvSecret_verifyStudentToken1": "example_secretToken",
+				"EnvSecret_verifyStudentToken2": "example_secretToken",
+				"EnvSecret_verifyStudentToken3": "example_secretToken",
+
+				"EnvSecret_keyPrivateJwtStudent": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"EnvSecret_keyPrivateJwtAdmin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+
+				"EnvSecret_keyPixGP": "77777777-7777-7777-7777-777777777777",
+				"EnvSecret_keyPixRP": "88888888-8888-8888-8888-888888888888",
+				"EnvSecret_keyPixRC": "99999999-9999-9999-9999-999999999999",
+				"EnvSecret_keyClientIdEfiBankGP": "Client_Id_cccccccccccccccccccccccccccccccccccccccc",
+				"EnvSecret_keyClientIdEfiBankRP": "Client_Id_dddddddddddddddddddddddddddddddddddddddd",
+				"EnvSecret_keyClientIdEfiBankRC": "Client_Id_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+				"EnvSecret_keyClientSecretEfiBankGP": "Client_Secret_ffffffffffffffffffffffffffffffffffffffff",
+				"EnvSecret_keyClientSecretEfiBankRP": "Client_Secret_gggggggggggggggggggggggggggggggggggggggg",
+				"EnvSecret_keyClientSecretEfiBankRC": "Client_Secret_hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+				"EnvSecret_tokenWebhookEfiBank": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+
+				"EnvSecret_geminiApiKey": "jjjjjjjj_jjjjjjjjj_jjjjjjjjjjjjj_jj-jjj",
+				"EnvSecret_tokenBetweenServer": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk", */
+			},
+		},
+
+		// # # # # # # # # # # # # # # # # # # # #
+		// Env Dev
+		"dev": {
+			// Name Dev
+			"name": "somente-alunos-backend-dev",
+
+			// Routes Dev
+			"routes": [
+				{
+					"pattern": "devapi.somentealunos.vip",
+					"custom_domain": true,
+				},
+			],
+
+			// D1 Dev
+			"d1_databases": [
+				{
+					"binding": "D1_somenteAlunosAll2",
+					"database_name": "d1_somente_alunos_all_2-dev",
+					"database_id": "55bf0f16-bf4d-46ae-98cc-cfe66d98f394",
+					"preview_database_id": "55bf0f16-bf4d-46ae-98cc-cfe66d98f394",
+				},
+			],
+
+			// R2 Dev
+			"r2_buckets": [
+				{
+					"binding": "R2_somenteAlunosAll2",
+					"bucket_name": "somente-alunos-all-2-dev",
+					"preview_bucket_name": "somente-alunos-all-2-dev",
+				},
+			],
+
+			// KV Dev
+			"kv_namespaces": [
+				{
+					"binding": "KV_somenteAlunosAll2",
+					"id": "2d009c95f3854370b2c91d48e7bae638",
+				},
+			],
+
+			// Mtls Certificates Dev
+			"mtls_certificates": [
+				{
+					"binding": "MtlsCertificates_efiBankGP",
+					"certificate_id": "b3812965-73a2-46b2-a9b2-729cc13ca66f",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRP",
+					"certificate_id": "bda6ec26-9536-4eb6-980c-2140cf781258",
+					"remote": true,
+				},
+				{
+					"binding": "MtlsCertificates_efiBankRC",
+					"certificate_id": "cbd1aa0d-a2cf-4f03-aca4-360cfeb6725e",
+					"remote": true,
+				},
+			],
+
+			// Var Dev
+			"vars": {
+				"Env_originFrontend": "https://dev.somentealunos.vip",
+				"Env_hostnameFrontend": "somentealunos.vip",
+				"Env_cookiePrefix": "dev",
+				"Env_environment": "dev",
+				"Env_webhookUrlBase": "https://devapi.somentealunos.vip/post/efi-bank/webhook",
+
+				// Variables Secrets (They can be set here or in a .env.dev file)
+				/* "EnvSecret_verifyStudentCpfOrRa": true,
+
+				"EnvSecret_verifyStudentEndpoint1": "https://example-external-api-to-verify-student-document.com/verify_1",
+				"EnvSecret_verifyStudentEndpoint2": "https://example-external-api-to-verify-student-document.com/verify_2",
+				"EnvSecret_verifyStudentEndpoint3": "https://example-external-api-to-verify-student-document.com/verify_3",
+
+				"EnvSecret_verifyStudentToken1": "example_secretToken",
+				"EnvSecret_verifyStudentToken2": "example_secretToken",
+				"EnvSecret_verifyStudentToken3": "example_secretToken",
+
+				"EnvSecret_keyPrivateJwtStudent": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"EnvSecret_keyPrivateJwtAdmin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+
+				"EnvSecret_keyPixGP": "77777777-7777-7777-7777-777777777777",
+				"EnvSecret_keyPixRP": "88888888-8888-8888-8888-888888888888",
+				"EnvSecret_keyPixRC": "99999999-9999-9999-9999-999999999999",
+				"EnvSecret_keyClientIdEfiBankGP": "Client_Id_cccccccccccccccccccccccccccccccccccccccc",
+				"EnvSecret_keyClientIdEfiBankRP": "Client_Id_dddddddddddddddddddddddddddddddddddddddd",
+				"EnvSecret_keyClientIdEfiBankRC": "Client_Id_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+				"EnvSecret_keyClientSecretEfiBankGP": "Client_Secret_ffffffffffffffffffffffffffffffffffffffff",
+				"EnvSecret_keyClientSecretEfiBankRP": "Client_Secret_gggggggggggggggggggggggggggggggggggggggg",
+				"EnvSecret_keyClientSecretEfiBankRC": "Client_Secret_hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+				"EnvSecret_tokenWebhookEfiBank": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+
+				"EnvSecret_geminiApiKey": "jjjjjjjj_jjjjjjjjj_jjjjjjjjjjjjj_jj-jjj",
+				"EnvSecret_tokenBetweenServer": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk", */
+			},
+		},
+
+		// # # # # # # # # # # # # # # # # # # # #
+		// Env Local
+		"local": {
+			// Name Local
+			"name": "somente-alunos-backend-local",
+
+			// Routes Local
+			"routes": [
+				{
+					"pattern": "localapi.somentealunos.vip",
+					"custom_domain": true,
+				},
+			],
+
+			// D1 Local
+			"d1_databases": [
+				{
+					"binding": "D1_somenteAlunosAll2",
+					"database_name": "d1_somente_alunos_all_2-local",
+					"database_id": "6158fe23-a31e-462a-ac58-70415ae09000",
+					"preview_database_id": "6158fe23-a31e-462a-ac58-70415ae09000",
+				},
+			],
+
+			// R2 Local
+			"r2_buckets": [
+				{
+					"binding": "R2_somenteAlunosAll2",
+					"bucket_name": "somente-alunos-all-2-local",
+					"preview_bucket_name": "somente-alunos-all-2-local",
+				},
+			],
+
+			// KV Local
+			"kv_namespaces": [
+				{
+					"binding": "KV_somenteAlunosAll2",
+					"id": "1c77f310ea85444185d89ef80374d000",
+				},
+			],
+
+			// Mtls Certificates Local
+			/* "mtls_certificates":[
+				{
+				"binding": "MtlsCertificates_efiBankGP",
+				"certificate_id": "b3812965-73a2-46b2-a9b2-729cc13ca66f",
+				"remote": true
+				},
+				{
+				"binding": "MtlsCertificates_efiBankRP",
+				"certificate_id": "bda6ec26-9536-4eb6-980c-2140cf781258",
+				"remote": true
+				},
+				{
+				"binding": "MtlsCertificates_efiBankRC",
+				"certificate_id": "cbd1aa0d-a2cf-4f03-aca4-360cfeb6725e",
+				"remote": true
+				}
+			], */
+
+			// Var Local
+			"vars": {
+				"Env_originFrontend": "https://local.somentealunos.vip",
+				"Env_hostnameFrontend": "somentealunos.vip",
+				"Env_cookiePrefix": "local",
+				"Env_environment": "local",
+				"Env_webhookUrlBase": "https://localapi.somentealunos.vip/post/efi-bank/webhook",
+
+				// Variables Secrets (They can be set here or in a .env.local file)
+				/* "EnvSecret_verifyStudentCpfOrRa": true,
+
+				"EnvSecret_verifyStudentEndpoint1": "https://example-external-api-to-verify-student-document.com/verify_1",
+				"EnvSecret_verifyStudentEndpoint2": "https://example-external-api-to-verify-student-document.com/verify_2",
+				"EnvSecret_verifyStudentEndpoint3": "https://example-external-api-to-verify-student-document.com/verify_3",
+
+				"EnvSecret_verifyStudentToken1": "example_secretToken",
+				"EnvSecret_verifyStudentToken2": "example_secretToken",
+				"EnvSecret_verifyStudentToken3": "example_secretToken",
+
+				"EnvSecret_keyPrivateJwtStudent": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"EnvSecret_keyPrivateJwtAdmin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+
+				"EnvSecret_keyPixGP": "77777777-7777-7777-7777-777777777777",
+				"EnvSecret_keyPixRP": "88888888-8888-8888-8888-888888888888",
+				"EnvSecret_keyPixRC": "99999999-9999-9999-9999-999999999999",
+				"EnvSecret_keyClientIdEfiBankGP": "Client_Id_cccccccccccccccccccccccccccccccccccccccc",
+				"EnvSecret_keyClientIdEfiBankRP": "Client_Id_dddddddddddddddddddddddddddddddddddddddd",
+				"EnvSecret_keyClientIdEfiBankRC": "Client_Id_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+				"EnvSecret_keyClientSecretEfiBankGP": "Client_Secret_ffffffffffffffffffffffffffffffffffffffff",
+				"EnvSecret_keyClientSecretEfiBankRP": "Client_Secret_gggggggggggggggggggggggggggggggggggggggg",
+				"EnvSecret_keyClientSecretEfiBankRC": "Client_Secret_hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+				"EnvSecret_tokenWebhookEfiBank": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+
+				"EnvSecret_geminiApiKey": "jjjjjjjj_jjjjjjjjj_jjjjjjjjjjjjj_jj-jjj",
+				"EnvSecret_tokenBetweenServer": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk", */
+			},
+		},
+	},
+}
