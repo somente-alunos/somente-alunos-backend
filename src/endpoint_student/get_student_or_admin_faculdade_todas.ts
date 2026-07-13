@@ -1,5 +1,5 @@
 
-import { Function_getD1, Function_getFuncionName, Function_getResponseError, Function_getStudentAuthenticated, Function_isError } from "../function_global"
+import { Function_getAdminAuthenticated, Function_getD1, Function_getFuncionName, Function_getResponseError, Function_getStudentAuthenticated, Function_isError } from "../function_global"
 
 
 type Type_GetStudentOrAdminFaculdadeTodasResponse = {
@@ -12,7 +12,7 @@ export class Class_GetStudentOrAdminFaculdadeTodas {
 		try {
 			// \/ Autentica aluno pelo JWT
 			const Const_studentAuthenticatedStudent = await Function_getStudentAuthenticated(Parameter_request, Parameter_env, false)
-			const Const_studentAuthenticatedAdmin = await Function_getStudentAuthenticated(Parameter_request, Parameter_env, false)
+			const Const_studentAuthenticatedAdmin = await Function_getAdminAuthenticated(Parameter_request, Parameter_env, false)
 			if (Function_isError(Const_studentAuthenticatedStudent) && Function_isError(Const_studentAuthenticatedAdmin)) {
 				return Function_getResponseError(Const_studentAuthenticatedStudent, 451, 'Unauthorized student JWT')
 			}
