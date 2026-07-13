@@ -39,6 +39,7 @@ import { Class_GetAdminConteudo } from "./endpoint_admin/get_admin_conteudo"
 import { Class_PostStudentDenuncia } from "./endpoint_student/post_student_denuncia"
 import { Class_GetAdminDenuncia } from "./endpoint_admin/get_admin_denuncia"
 import { Class_GetStudentCelularOuComputador } from "./endpoint_student/get_student_celular_ou_computador"
+import { Class_GetStudentSessao } from "./endpoint_student/get_student_sessao"
 import { Class_PostStudentSair } from "./endpoint_student/post_student_sair"
 import { Class_PostAdminSair } from "./endpoint_admin/post_admin_sair"
 
@@ -298,6 +299,11 @@ async function Function_handleRequest(Parameter_request: Request, Parameter_env:
 	// GET /get/student/celular-ou-computador
 	else if (Const_pathName === '/get/student/celular-ou-computador' && Const_method === 'GET') {
 		return await Class_GetStudentCelularOuComputador.main(Parameter_request, Parameter_env, Parameter_context)
+	}
+
+	// GET /get/student/sessao
+	else if (Const_pathName === '/get/student/sessao' && Const_method === 'GET') {
+		return await Class_GetStudentSessao.main(Parameter_request, Parameter_env, Parameter_context)
 	}
 
 	// POST /post/student/sair
