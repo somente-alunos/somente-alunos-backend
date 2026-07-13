@@ -387,6 +387,37 @@ export function Function_generateCookieAdminJwt(Parameter_env: Env, Parameter_st
 	}
 }
 
+export function Function_generateCookieClearArray(Parameter_env: Env): Type_errorOr<Array<string>> {
+	try {
+		if (typeof Parameter_env.Env_cookiePrefix !== 'string' || Parameter_env.Env_cookiePrefix.length <= 0) {
+			return { typ: 'logical', msg: 'Invalid cookie prefix in environment', inf: { Env_cookiePrefix: Parameter_env.Env_cookiePrefix }, loc: Function_getFuncionName(), err: true }
+		}
+
+		const Const_cookieNameArray = [
+			`${Parameter_env.Env_cookiePrefix}_jwt`,
+			`${Parameter_env.Env_cookiePrefix}_student_jwt`,
+			`${Parameter_env.Env_cookiePrefix}_admin_jwt`
+		]
+
+		// O navegador so remove o cookie quando Path/Domain batem com os usados na criacao: por isso
+		// apaga a versao com Domain (atual) e tambem a host-only (cookies antigos, sem Domain).
+		const Const_hostnameFrontend = typeof Parameter_env.Env_hostnameFrontend === 'string' && Parameter_env.Env_hostnameFrontend.length > 1 ? Parameter_env.Env_hostnameFrontend : ''
+		const Const_cookieClearArray: Array<string> = []
+		for (const Const_cookieName of Const_cookieNameArray) {
+			Const_cookieClearArray.push(`${Const_cookieName}=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`)
+			if (Const_hostnameFrontend) {
+				Const_cookieClearArray.push(`${Const_cookieName}=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Domain=${Const_hostnameFrontend}`)
+			}
+		}
+
+		return Const_cookieClearArray
+	}
+
+	catch (Parameter_error) {
+		return { typ: 'catch', msg: 'Error generating cookie cleanup headers', inf: Parameter_error, loc: Function_getFuncionName(), err: true }
+	}
+}
+
 export async function Function_verifyStudentCpfOrRaExternalApi(Parameter_raOrCpf: string, Parameter_env: Env): Promise<Type_errorOr<boolean>> {
 	try {
 		const Const_raOrCpf = Function_getTrimmedStringOrUndefined(Parameter_raOrCpf)
