@@ -162,6 +162,12 @@ export class Class_GetStudentConteudoFile {
 				const Const_htmlHeaders = new Headers()
 				Const_htmlHeaders.set('content-type', Const_r2Headers.get('content-type') || 'text/html; charset=utf-8')
 				Const_htmlHeaders.set('content-disposition', `inline; filename="${Const_r2ObjectBody.key}"`)
+				// Cache no navegador do proprio aluno (private, nunca CDN/compartilhado) por 5 min, para
+				// reabrir o mesmo conteudo ser instantaneo sem refazer JWT + D1 + busca no R2. O frontend
+				// separa preview e full pelo query param `type`, entao cada modo tem sua propria entrada de
+				// cache e a compra (preview->full) nao mostra a versao antiga. `type` NUNCA autoriza acesso:
+				// o full/preview e sempre decidido acima pela autenticacao (Const_useFullContent).
+				Const_htmlHeaders.set('cache-control', 'private, max-age=300')
 				// So o proprio frontend pode embutir o conteudo pago num iframe.
 				if (Const_frontendOrigin) {
 					Const_htmlHeaders.set('content-security-policy', `frame-ancestors ${Const_frontendOrigin}`)
