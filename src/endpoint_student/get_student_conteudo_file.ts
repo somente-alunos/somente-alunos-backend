@@ -1,4 +1,5 @@
 import { Function_getContentFileFromR2, Function_getD1, Function_getFuncionName, Function_getResponseByR2ObjectBody, Function_getResponseError, Function_getStudentAcquiredContentUuidArray, Function_getStudentAuthenticated, Function_isError, Function_htmlToPdf } from "../function_global"
+import { Function_injectViewerHeightReporterScript } from "../function_inject_viewer_height_reporter"
 
 
 export class Class_GetStudentConteudoFile {
@@ -141,7 +142,39 @@ export class Class_GetStudentConteudoFile {
 			// /\ Se requisitado, retorne PDF para download (se já for PDF ou convertendo HTML)
 
 			// \/ Retorna arquivo final
+			// O frontend aponta o iframe (sandbox="allow-scripts") direto para esta URL. Para o HTML
+			// do aluno reportar a propria altura ao parent, injetamos aqui o <script> medidor antes
+			// de servir. Conteudo nao-HTML (ex: PDF) continua sendo servido por streaming, sem alteracao.
+			const Const_frontendOrigin = typeof Parameter_env.Env_originFrontend === 'string' ? Parameter_env.Env_originFrontend : ''
+
+			// Descobre o content-type gravado no R2 para decidir se injeta o medidor.
+			const Const_r2Headers = new Headers()
+			try {
+				Const_r2ObjectBody.writeHttpMetadata(Const_r2Headers)
+			} catch {}
+			const Const_r2ContentType = (Const_r2Headers.get('content-type') || '').toLowerCase()
+			const Const_isHtmlResponse = Const_r2ContentType.includes('text/html') || Const_r2ContentType.includes('application/xhtml+xml')
+
+			if (Const_isHtmlResponse) {
+				const Const_htmlOriginal = await Const_r2ObjectBody.text()
+				const Const_htmlInjected = Function_injectViewerHeightReporterScript(Const_htmlOriginal, Const_frontendOrigin)
+
+				const Const_htmlHeaders = new Headers()
+				Const_htmlHeaders.set('content-type', Const_r2Headers.get('content-type') || 'text/html; charset=utf-8')
+				Const_htmlHeaders.set('content-disposition', `inline; filename="${Const_r2ObjectBody.key}"`)
+				// So o proprio frontend pode embutir o conteudo pago num iframe.
+				if (Const_frontendOrigin) {
+					Const_htmlHeaders.set('content-security-policy', `frame-ancestors ${Const_frontendOrigin}`)
+				}
+				Const_htmlHeaders.set('x-content-file-mode', Const_useFullContent ? 'full' : 'preview')
+
+				return new Response(Const_htmlInjected, { status: 200, headers: Const_htmlHeaders })
+			}
+
 			const Const_response = Function_getResponseByR2ObjectBody(Const_r2ObjectBody)
+			if (Const_frontendOrigin) {
+				Const_response.headers.set('content-security-policy', `frame-ancestors ${Const_frontendOrigin}`)
+			}
 			Const_response.headers.set('x-content-file-mode', Const_useFullContent ? 'full' : 'preview')
 			return Const_response
 			// /\ Retorna arquivo final
